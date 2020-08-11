@@ -1,0 +1,1410 @@
+[student@workstation ~]$ lab image-operations start
+
+Setting up workstation for the GE: Creating a Custom Apache Container Image
+
+ · Checking podman configuration...............................  SUCCESS
+[student@workstation ~]$ sudo podman login quay.io
+Username: carol-liang
+Password: 
+error logging into "quay.io": invalid username/password
+
+[student@workstation ~]$ sudo podman login quay.io
+Username: carol_liang
+Password: 
+error logging into "quay.io": invalid username/password
+
+[student@workstation ~]$ sudo podman login quay.io
+Username: carol_liang
+Password: 
+error logging into "quay.io": invalid username/password
+
+[student@workstation ~]$ sudo podman login quay.io
+Username: carol_liang
+Password: 
+Login Succeeded!
+[student@workstation ~]$ sudo podman run -d --name official-httpd \
+> -p 8180:80 redhattraining/httpd-parent
+Trying to pull registry.access.redhat.com/redhattraining/httpd-parent:latest...Failed
+Trying to pull quay.io/redhattraining/httpd-parent:latest...Getting image source signatures
+Copying blob sha256:787f47dbeaac926cc8c927a48e8a84fc97e05fbd1c08a4c9c4ddcaddfd87e2f7
+ 67.66 MB / 67.66 MB [======================================================] 3s
+Copying blob sha256:6a5240d60dc4e1ade0d103badb2a897e8103ebf0ebe08350cd582bbc9671cc7a
+ 1.45 KB / 1.45 KB [========================================================] 0s
+Copying blob sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+ 32 B / 32 B [==============================================================] 0s
+Skipping fetch of repeat blob sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Copying blob sha256:08b8c9fdec444ba23c764be2e8c24e1526d664dc72339af2429dc66fbfefe850
+ 5.76 MB / 5.76 MB [========================================================] 0s
+Skipping fetch of repeat blob sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Skipping fetch of repeat blob sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Copying blob sha256:408208567b9aab11c5265eadd4cbc9c890d73d74ffcdaf3e2309aaef12cd9394
+ 148 B / 148 B [============================================================] 0s
+Skipping fetch of repeat blob sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Skipping fetch of repeat blob sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Writing manifest to image destination
+Storing signatures
+afaea103a37b2ae880fad58c822ee4a5cb036ebee1744af9f295678d41ded096
+[student@workstation ~]$ do podman exec -it official-httpd /bin/bash
+bash: syntax error near unexpected token `do'
+[student@workstation ~]$ sudo podman exec -it official-httpd /bin/bash
+bash-4.4# echo "DO180 Page" > /var/www/html/do180.html
+bash-4.4# exit
+exit
+[student@workstation ~]$ curl 127.0.0.1:8180/do180.html
+DO180 Page
+[student@workstation ~]$ sudo podman inspect -f \
+> > "{{range .Mounts}}{{println .Destination}}{{end}}" official-httpd
+container or image name must be specified: podman inspect [options [...]] name
+[student@workstation ~]$ sudo podman inspect -f "{{range .Mounts}}{{println .Destination}}{{end}}" official-httpd
+/proc
+/dev
+/dev/pts
+/dev/shm
+/dev/mqueue
+/sys
+/sys/fs/cgroup
+
+[student@workstation ~]$ sudo podman diff official-httpd
+C /root
+A /root/.bash_history
+C /run/httpd
+A /run/httpd/cgisock.1
+A /run/httpd/httpd.pid
+C /tmp
+C /var
+C /var/log
+C /var/log/httpd
+A /var/log/httpd/access_log
+A /var/log/httpd/error_log
+C /var/www
+C /var/www/html
+A /var/www/html/do180.html
+[student@workstation ~]$ sudo podman stop official-httpd
+afaea103a37b2ae880fad58c822ee4a5cb036ebee1744af9f295678d41ded096
+[student@workstation ~]$ sudo podman commit \
+> > -a 'Your Name' official-httpd do180-custom-httpd
+you must provide a container name or ID and a target image name
+[student@workstation ~]$ sudo podman commit -a 'Carol' official-httpd do180-custom-httpd
+Getting image source signatures
+Skipping fetch of repeat blob sha256:24d85c895b6b870f6b84327a5e31aa567a5d30588de0a0bdd9a669ec5012339c
+Skipping fetch of repeat blob sha256:c613b100be1645941fded703dd6037e5aba7c9388fd1fcb37c2f9f73bc438126
+Skipping fetch of repeat blob sha256:574bcc187eda95dd171dc76c3b8a8b39e07f38fda12accee6ea8477ea2c5f95a
+Skipping fetch of repeat blob sha256:7f9108fde4a18112ccc28fd421097680ad890ebad48ca3e635063e5ac1adbfb3
+Copying blob sha256:e6bdfdba69a1ca8494fb3d647c99c10135ccdcbe66750540bc834a776f52fc25
+ 10.50 KB / 10.50 KB [======================================================] 0s
+Copying config sha256:dbbe99b3bb58b4d853ed4f7de5d1f179c4aa2a1513899253fa2b558b3de2f45d
+ 4.08 KB / 4.08 KB [========================================================] 0s
+Writing manifest to image destination
+Storing signatures
+dbbe99b3bb58b4d853ed4f7de5d1f179c4aa2a1513899253fa2b558b3de2f45d
+[student@workstation ~]$ sudo podman images
+REPOSITORY                                        TAG        IMAGE ID       CREATED          SIZE
+localhost/do180-custom-httpd                      latest     dbbe99b3bb58   11 seconds ago   236MB
+registry.access.redhat.com/rhel                   latest     9da37a681956   8 days ago       215MB
+quay.io/redhattraining/httpd-parent               latest     4346d3cace25   14 months ago    236MB
+registry.access.redhat.com/rhscl/httpd-24-rhel7   2.4-36.8   5f9f898a3093   2 years ago      309MB
+[student@workstation ~]$ sudo podman tag do180-custom-httpd \
+> > quay.io/${RHT_OCP4_QUAY_USER}/do180-custom-httpd:v1.0
+bash: quay.io//do180-custom-httpd:v1.0: No such file or directory
+[student@workstation ~]$ sudo podman tag do180-custom-httpd quay.io/${RHT_OCP4_QUAY_USER}/do180-custom-httpd:v1.0
+error adding 'quay.io//do180-custom-httpd:v1.0' to image "do180-custom-httpd": invalid reference format
+[student@workstation ~]$ sudo podman tag do180-custom-httpd quay.io/$carol_liang/do180-custom-httpd:v1.0
+error adding 'quay.io//do180-custom-httpd:v1.0' to image "do180-custom-httpd": invalid reference format
+[student@workstation ~]$ sudo podman tag do180-custom-httpd quay.io/${RHT_OCP4_QUAY_USER}/do180-custom-httpd:v1.0
+error adding 'quay.io//do180-custom-httpd:v1.0' to image "do180-custom-httpd": invalid reference format
+[student@workstation ~]$ sudo podman tag do180-custom-httpd quay.io/${RHT_OCP4_QUAY_USER}/do180-custom-httpd:v1.0
+error adding 'quay.io//do180-custom-httpd:v1.0' to image "do180-custom-httpd": invalid reference format
+[student@workstation ~]$ sudo podman commit -a 'carol_liang' official-httpd do180-custom-httpd
+Getting image source signatures
+Skipping fetch of repeat blob sha256:24d85c895b6b870f6b84327a5e31aa567a5d30588de0a0bdd9a669ec5012339c
+Skipping fetch of repeat blob sha256:c613b100be1645941fded703dd6037e5aba7c9388fd1fcb37c2f9f73bc438126
+Skipping fetch of repeat blob sha256:574bcc187eda95dd171dc76c3b8a8b39e07f38fda12accee6ea8477ea2c5f95a
+Skipping fetch of repeat blob sha256:7f9108fde4a18112ccc28fd421097680ad890ebad48ca3e635063e5ac1adbfb3
+Skipping fetch of repeat blob sha256:e6bdfdba69a1ca8494fb3d647c99c10135ccdcbe66750540bc834a776f52fc25
+Copying config sha256:2d293c2c3674c99bb43fded30f3844e822d476986a262894ec00fbbf86a8e10b
+ 4.09 KB / 4.09 KB [========================================================] 0s
+Writing manifest to image destination
+Storing signatures
+2d293c2c3674c99bb43fded30f3844e822d476986a262894ec00fbbf86a8e10b
+[student@workstation ~]$ sudo podman images
+REPOSITORY                                        TAG        IMAGE ID       CREATED          SIZE
+localhost/do180-custom-httpd                      latest     2d293c2c3674   26 seconds ago   236MB
+<none>                                            <none>     dbbe99b3bb58   8 minutes ago    236MB
+registry.access.redhat.com/rhel                   latest     9da37a681956   8 days ago       215MB
+quay.io/redhattraining/httpd-parent               latest     4346d3cace25   14 months ago    236MB
+registry.access.redhat.com/rhscl/httpd-24-rhel7   2.4-36.8   5f9f898a3093   2 years ago      309MB
+[student@workstation ~]$ sudo podman tag do180-custom-httpd quay.io/${RHT_OCP4_QUAY_USER}/do180-custom-httpd:v1.0
+error adding 'quay.io//do180-custom-httpd:v1.0' to image "do180-custom-httpd": invalid reference format
+[student@workstation ~]$ sudo podman tag do180-custom-httpd quay.io/carol_liang/do180-custom-httpd:v1.0
+[student@workstation ~]$ sudo podman images
+REPOSITORY                                        TAG        IMAGE ID       CREATED              SIZE
+quay.io/carol_liang/do180-custom-httpd            v1.0       2d293c2c3674   About a minute ago   236MB
+localhost/do180-custom-httpd                      latest     2d293c2c3674   About a minute ago   236MB
+<none>                                            <none>     dbbe99b3bb58   9 minutes ago        236MB
+registry.access.redhat.com/rhel                   latest     9da37a681956   8 days ago           215MB
+quay.io/redhattraining/httpd-parent               latest     4346d3cace25   14 months ago        236MB
+registry.access.redhat.com/rhscl/httpd-24-rhel7   2.4-36.8   5f9f898a3093   2 years ago          309MB
+[student@workstation ~]$ sudo podman push do180-custom-httpd quay.io/carol_liang/do180-custom-httpd:v1.0
+Getting image source signatures
+Copying blob sha256:24d85c895b6b870f6b84327a5e31aa567a5d30588de0a0bdd9a669ec5012339c
+ 205.76 MB / 205.76 MB [===================================================] 14s
+Copying blob sha256:c613b100be1645941fded703dd6037e5aba7c9388fd1fcb37c2f9f73bc438126
+ 20.00 KB / 20.00 KB [======================================================] 0s
+Copying blob sha256:574bcc187eda95dd171dc76c3b8a8b39e07f38fda12accee6ea8477ea2c5f95a
+ 19.35 MB / 19.35 MB [======================================================] 2s
+Copying blob sha256:7f9108fde4a18112ccc28fd421097680ad890ebad48ca3e635063e5ac1adbfb3
+ 2.50 KB / 2.50 KB [========================================================] 0s
+Copying blob sha256:e6bdfdba69a1ca8494fb3d647c99c10135ccdcbe66750540bc834a776f52fc25
+ 10.50 KB / 10.50 KB [======================================================] 0s
+Copying config sha256:2d293c2c3674c99bb43fded30f3844e822d476986a262894ec00fbbf86a8e10b
+ 4.09 KB / 4.09 KB [========================================================] 1s
+Writing manifest to image destination
+Copying config sha256:2d293c2c3674c99bb43fded30f3844e822d476986a262894ec00fbbf86a8e10b
+ 0 B / 4.09 KB [------------------------------------------------------------] 0s
+Writing manifest to image destination
+Storing signatures
+[student@workstation ~]$ sudo podman pull-q quay.io/carol_liang/do180-custom-httpd:v1.0
+Command "pull-q" not found.
+See `podman --help`.
+[student@workstation ~]$ sudo podman pull -q quay.io/carol_liang/do180-custom-httpd:v1.0
+2d293c2c3674c99bb43fded30f3844e822d476986a262894ec00fbbf86a8e10b
+[student@workstation ~]$ sudo podman run -d --name test-httpd -p 8280:80 \
+> > ${RHT_OCP4_QUAY_USER}/do180-custom-httpd:v1.0
+bash: /do180-custom-httpd:v1.0: Permission denied
+[student@workstation ~]$ sudo podman run -d --name test-httpd -p 8280:80 > carol_liang/do180-custom-httpd:v1.0
+bash: carol_liang/do180-custom-httpd:v1.0: No such file or directory
+[student@workstation ~]$ sudo podman run -d --name test-httpd -p 8280:80 carol_liang/do180-custom-httpd:v1.0
+5eaac574ffb2c52020fbf98f3826df35206230ec66cb1c67116b88a8a6ab73b6
+[student@workstation ~]$ curl http://localhost:8280/do180.html
+DO180 Page
+[student@workstation ~]$ lab image-operations finish
+
+Completing the GE: Creating a Custom Apache Container Image
+
+ · Stopping official-httpd container...........................  SUCCESS
+ · Removing official-httpd container...........................  SUCCESS
+ · Stopping test-httpd container...............................  SUCCESS
+ · Removing test-httpd container...............................  SUCCESS
+ · Removing redhattraining/httpd-parent image..................  SUCCESS
+ · Removing quay.io/carol_liang/do180-custom-httpd image.......  SUCCESS
+ · Removing localhost/do180-custom-httpd image.................  SUCCESS
+[student@workstation ~]$ lab dockerfile-create start
+
+Setting up workstation for the Guided Exercise: Building a basic Apache Container Image
+
+ · Checking podman configuration...............................  SUCCESS
+ · Downloading starter project.................................  SUCCESS
+ · Downloading solution project................................  SUCCESS
+
+Setup successful. Please proceed with the exercise.
+
+[student@workstation ~]$ vim /home/student/DO180/labs/dockerfile-create/Dockerfile
+[student@workstation ~]$ cd /home/student/DO180/labs/dockerfile-create
+[student@workstation dockerfile-create]$ sudo podman build --layers=false \
+> > -t do180/apache .
+error reading "/home/student/DO180/labs/dockerfile-create/do180/apache/home/student/DO180/labs/dockerfile-create/do180/apache/Dockerfile": open /home/student/DO180/labs/dockerfile-create/do180/apache/home/student/DO180/labs/dockerfile-create/do180/apache/Dockerfile: no such file or directory
+[student@workstation dockerfile-create]$ sudo podman build --layers=false -t do180/apache .
+STEP 1: FROM ubi7/ubi:7.7
+Getting image source signatures
+Copying blob sha256:fcd63ccfdd0ccd78cc0b23a6e9cef0c400625c1506f3eed694d92c7ced04b4c4
+ 72.72 MB / ? [------=-----------------------------------------------------] 3s 
+Copying blob sha256:09dbbf8834d2d84d8d8a37dcf7d6049794c9c8c604a3d3f2606768a82771438d
+ 1.57 KB / ? [-------------------------------------------------------------=] 0s
+Copying config sha256:0355cd652bd1c4afd8d8f2cd8d0a4887196cb4808b8f803e146ec266ecdd5aa2
+ 4.32 KB / 4.32 KB [========================================================] 0s
+Writing manifest to image destination
+Storing signatures
+STEP 2: MAINTAINER Carol Liang carol.liang1@bell.ca
+STEP 3: LABEL description="A custom Apache container based on UBI 7"
+STEP 4: RUN yum install -y httpd &&     yum clean all
+Loaded plugins: ovl, product-id, search-disabled-repos, subscription-manager
+This system is not receiving updates. You can use subscription-manager on the host to register and assign subscriptions.
+ubi-7                                                    | 3.8 kB     00:00     
+ubi-7-rhah                                               | 3.7 kB     00:00     
+ubi-7-server-devtools-rpms                               | 3.8 kB     00:00     
+ubi-7-server-extras-rpms                                 | 3.7 kB     00:00     
+ubi-7-server-optional-rpms                               | 3.8 kB     00:00     
+ubi-server-rhscl-7-rpms                                  | 3.8 kB     00:00     
+(1/18): ubi-7/x86_64/updateinfo                            |   92 B   00:00     
+(2/18): ubi-7/x86_64/group                                 |  124 B   00:00     
+(3/18): ubi-7/x86_64/primary_db                            | 797 kB   00:00     
+(4/18): ubi-7-rhah/x86_64/group                            |  124 B   00:00     
+(5/18): ubi-7-rhah/x86_64/updateinfo                       |   92 B   00:00     
+(6/18): ubi-7-rhah/x86_64/primary_db                       | 2.5 kB   00:00     
+(7/18): ubi-7-server-devtools-rpms/x86_64/updateinfo       |   92 B   00:00     
+(8/18): ubi-7-server-devtools-rpms/x86_64/group            |  124 B   00:00     
+(9/18): ubi-7-server-devtools-rpms/x86_64/primary_db       | 8.6 kB   00:00     
+(10/18): ubi-7-server-extras-rpms/x86_64/group             |  124 B   00:00     
+(11/18): ubi-7-server-extras-rpms/x86_64/updateinfo        |   92 B   00:00     
+(12/18): ubi-7-server-extras-rpms/x86_64/primary_db        | 6.7 kB   00:00     
+(13/18): ubi-7-server-optional-rpms/x86_64/group           |  124 B   00:00     
+(14/18): ubi-7-server-optional-rpms/x86_64/updateinfo      |   92 B   00:00     
+(15/18): ubi-7-server-optional-rpms/x86_64/primary_db      |  14 kB   00:00     
+(16/18): ubi-server-rhscl-7-rpms/x86_64/updateinfo         |   92 B   00:00     
+(17/18): ubi-server-rhscl-7-rpms/x86_64/group              |  124 B   00:00     
+(18/18): ubi-server-rhscl-7-rpms/x86_64/primary_db         | 260 kB   00:00     
+Resolving Dependencies
+--> Running transaction check
+---> Package httpd.x86_64 0:2.4.6-93.el7 will be installed
+--> Processing Dependency: httpd-tools = 2.4.6-93.el7 for package: httpd-2.4.6-93.el7.x86_64
+--> Processing Dependency: system-logos >= 7.92.1-1 for package: httpd-2.4.6-93.el7.x86_64
+--> Processing Dependency: /etc/mime.types for package: httpd-2.4.6-93.el7.x86_64
+--> Processing Dependency: libapr-1.so.0()(64bit) for package: httpd-2.4.6-93.el7.x86_64
+--> Processing Dependency: libaprutil-1.so.0()(64bit) for package: httpd-2.4.6-93.el7.x86_64
+--> Running transaction check
+---> Package apr.x86_64 0:1.4.8-5.el7 will be installed
+---> Package apr-util.x86_64 0:1.5.2-6.el7 will be installed
+---> Package httpd-tools.x86_64 0:2.4.6-93.el7 will be installed
+---> Package mailcap.noarch 0:2.1.41-2.el7 will be installed
+---> Package redhat-logos.noarch 0:70.7.0-1.el7 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package              Arch           Version                Repository     Size
+================================================================================
+Installing:
+ httpd                x86_64         2.4.6-93.el7           ubi-7         1.2 M
+Installing for dependencies:
+ apr                  x86_64         1.4.8-5.el7            ubi-7         104 k
+ apr-util             x86_64         1.5.2-6.el7            ubi-7          92 k
+ httpd-tools          x86_64         2.4.6-93.el7           ubi-7          92 k
+ mailcap              noarch         2.1.41-2.el7           ubi-7          31 k
+ redhat-logos         noarch         70.7.0-1.el7           ubi-7          13 M
+
+Transaction Summary
+================================================================================
+Install  1 Package (+5 Dependent packages)
+
+Total download size: 15 M
+Installed size: 18 M
+Downloading packages:
+warning: /var/cache/yum/x86_64/7Server/ubi-7/packages/apr-util-1.5.2-6.el7.x86_64.rpm: Header V3 RSA/SHA256 Signature, key ID fd431d51: NOKEY
+Public key for apr-util-1.5.2-6.el7.x86_64.rpm is not installed
+(1/6): apr-util-1.5.2-6.el7.x86_64.rpm                     |  92 kB   00:00     
+(2/6): apr-1.4.8-5.el7.x86_64.rpm                          | 104 kB   00:00     
+(3/6): httpd-tools-2.4.6-93.el7.x86_64.rpm                 |  92 kB   00:00     
+(4/6): mailcap-2.1.41-2.el7.noarch.rpm                     |  31 kB   00:00     
+(5/6): httpd-2.4.6-93.el7.x86_64.rpm                       | 1.2 MB   00:00     
+(6/6): redhat-logos-70.7.0-1.el7.noarch.rpm                |  13 MB   00:00     
+--------------------------------------------------------------------------------
+Total                                               15 MB/s |  15 MB  00:00     
+Retrieving key from file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+Importing GPG key 0xFD431D51:
+ Userid     : "Red Hat, Inc. (release key 2) <security@redhat.com>"
+ Fingerprint: 567e 347a d004 4ade 55ba 8a5f 199e 2f91 fd43 1d51
+ Package    : redhat-release-server-7.7-10.el7.x86_64 (@anaconda/7.7)
+ From       : /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+Importing GPG key 0x2FA658E0:
+ Userid     : "Red Hat, Inc. (auxiliary key) <security@redhat.com>"
+ Fingerprint: 43a6 e49c 4a38 f4be 9abf 2a53 4568 9c88 2fa6 58e0
+ Package    : redhat-release-server-7.7-10.el7.x86_64 (@anaconda/7.7)
+ From       : /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+Running transaction check
+Running transaction test
+Transaction test succeeded
+Running transaction
+  Installing : apr-1.4.8-5.el7.x86_64                                       1/6 
+  Installing : apr-util-1.5.2-6.el7.x86_64                                  2/6 
+  Installing : httpd-tools-2.4.6-93.el7.x86_64                              3/6 
+  Installing : redhat-logos-70.7.0-1.el7.noarch                             4/6 
+  Installing : mailcap-2.1.41-2.el7.noarch                                  5/6 
+  Installing : httpd-2.4.6-93.el7.x86_64                                    6/6 
+  Verifying  : mailcap-2.1.41-2.el7.noarch                                  1/6 
+  Verifying  : apr-util-1.5.2-6.el7.x86_64                                  2/6 
+  Verifying  : apr-1.4.8-5.el7.x86_64                                       3/6 
+  Verifying  : httpd-2.4.6-93.el7.x86_64                                    4/6 
+  Verifying  : redhat-logos-70.7.0-1.el7.noarch                             5/6 
+  Verifying  : httpd-tools-2.4.6-93.el7.x86_64                              6/6 
+
+Installed:
+  httpd.x86_64 0:2.4.6-93.el7                                                   
+
+Dependency Installed:
+  apr.x86_64 0:1.4.8-5.el7                  apr-util.x86_64 0:1.5.2-6.el7       
+  httpd-tools.x86_64 0:2.4.6-93.el7         mailcap.noarch 0:2.1.41-2.el7       
+  redhat-logos.noarch 0:70.7.0-1.el7       
+
+Complete!
+Loaded plugins: ovl, product-id, search-disabled-repos, subscription-manager
+This system is not receiving updates. You can use subscription-manager on the host to register and assign subscriptions.
+Cleaning repos: ubi-7 ubi-7-rhah ubi-7-server-devtools-rpms
+              : ubi-7-server-extras-rpms ubi-7-server-optional-rpms
+              : ubi-server-rhscl-7-rpms
+STEP 5: RUN echo "Hello from Dockerfile" > /usr/share/httpd/noindex/index.html
+STEP 6: EXPOSE 80
+STEP 7: ENTRYPOINT ["httpd", "-D", "FOREGROUND"]
+ERRO[0022] HOSTNAME is not supported for OCI image format, hostname 1a6370b10892 will be ignored. Must use `docker` format 
+STEP 8: COMMIT containers-storage:[overlay@/var/lib/containers/storage+/var/run/containers/storage:overlay.override_kernel_check=true]localhost/do180/apache:latest
+Getting image source signatures
+Skipping fetch of repeat blob sha256:5601485f01090b2ed055cfcbc1c36eb5acc39a57b80209a8d9f9ab34b2d457da
+Skipping fetch of repeat blob sha256:ac7577b8c383fcc22ec383df5fb565a2eaf59f00685d4a980bb54428e034ce2f
+Copying blob sha256:235c8459bd0b5ce9d81600286972f62188ced802e313fc260d82aa41f42ecef9
+ 18.70 MB / 18.70 MB [======================================================] 0s
+Copying config sha256:53de61a3d3d1d89d1354d519e25190823baa75b4022e993327a330a5dca8a008
+ 1.95 KB / 1.95 KB [========================================================] 0s
+Writing manifest to image destination
+Storing signatures
+--> 53de61a3d3d1d89d1354d519e25190823baa75b4022e993327a330a5dca8a008
+[student@workstation dockerfile-create]$ sudo podman images
+REPOSITORY                                        TAG        IMAGE ID       CREATED          SIZE
+localhost/do180/apache                            latest     53de61a3d3d1   48 seconds ago   247MB
+<none>                                            <none>     dbbe99b3bb58   2 hours ago      236MB
+registry.access.redhat.com/rhel                   latest     9da37a681956   8 days ago       215MB
+registry.access.redhat.com/ubi7/ubi               7.7        0355cd652bd1   5 months ago     215MB
+registry.access.redhat.com/rhscl/httpd-24-rhel7   2.4-36.8   5f9f898a3093   2 years ago      309MB
+[student@workstation dockerfile-create]$ sudo podman run --name lab-apache \
+> > -d -p 10080:80 do180/apache
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.88.0.13. Set the 'ServerName' directive globally to suppress this message
+^C[student@workstation dockerfile-create]$ sudo podman run --name lab-apache -d -p 10080:80 do180/apache
+error creating container storage: the container name "lab-apache" is already in use by "b2ff759d72b45255b282082769e8d631cf6b58298908470e814c34891bcdbb8d". You have to remove that container to be able to reuse that name.: that name is already in use
+[student@workstation dockerfile-create]$ sudo podman rm lab-apache
+b2ff759d72b45255b282082769e8d631cf6b58298908470e814c34891bcdbb8d
+[student@workstation dockerfile-create]$ sudo podman stop lab-apache
+unable to find container lab-apache: no container with name or ID lab-apache found: no such container
+[student@workstation dockerfile-create]$ sudo podman rm -f lab-apache
+no container with name or ID lab-apache found: no such container
+unable to find container lab-apache: no container with name or ID lab-apache found: no such container
+[student@workstation dockerfile-create]$ sudo podman run --name lab-apache -d -p 10080:80 do180/apache
+ae9b04b92dbe5fadd655e67389e813adbd2fd23170a55a6d655b13ddb55200d9
+[student@workstation dockerfile-create]$ sudo podman ps
+CONTAINER ID   IMAGE                           COMMAND               CREATED          STATUS              PORTS                   NAMES
+ae9b04b92dbe   localhost/do180/apache:latest   httpd -D FOREGROUND   20 seconds ago   Up 20 seconds ago   0.0.0.0:10080->80/tcp   lab-apache
+[student@workstation dockerfile-create]$ curl 127.0.0.1:10080
+Hello from Dockerfile
+[student@workstation dockerfile-create]$ lab dockerfile-create finish
+
+Completing the Guided Exercise: Building a basic Apache Container Image
+
+ · Stopping lab-apache container that is running...............  SUCCESS
+ · Removing lab-apache container that is in the cache..........  SUCCESS
+ · Removing do180/apache custom container image................  SUCCESS
+ · Removing UBI7 container image...............................  SUCCESS
+[student@workstation dockerfile-create]$ ls
+-d  Dockerfile  -t  training.repo
+[student@workstation dockerfile-create]$ cd ..
+[student@workstation labs]$ ll
+total 0
+drwxr-xr-x. 2 student student 39 Apr  3 14:53 container-review
+drwxr-xr-x. 2 student student 65 Aug 11 15:30 dockerfile-create
+drwxr-xr-x. 2 student student 20 Apr  3 14:53 manage-networking
+[student@workstation labs]$ pwd
+/home/student/DO180/labs
+[student@workstation labs]$ cd ~
+[student@workstation ~]$ lab dockerfile-review start
+
+Setting up workstation for the Lab: Creating Custom Container Images
+
+ · Checking podman configuration...............................  SUCCESS
+ · Checking if the container exists or is running..............  SUCCESS
+ · Downloading starter project.................................  SUCCESS
+ · Downloading solution project................................  SUCCESS
+
+Setup successful. Please proceed with the exercise.
+
+[student@workstation ~]$ mkdir home/student/DO180/labs/dockerfile-
+mkdir: cannot create directory ‘home/student/DO180/labs/dockerfile-’: No such file or directory
+[student@workstation ~]$ mkdir home/student/DO180/labs/dockerfile-review
+mkdir: cannot create directory ‘home/student/DO180/labs/dockerfile-review’: No such file or directory
+[student@workstation ~]$ mkdir /home/student/DO180/labs/dockerfile-review
+mkdir: cannot create directory ‘/home/student/DO180/labs/dockerfile-review’: File exists
+[student@workstation ~]$ ls
+-a       DO180       DO288-apps  Downloads  Music     Public                                            Templates
+Desktop  DO180-apps  Documents   info.txt   Pictures  {{range .Mounts}}{{println .Destination}}{{end}}  Videos
+[student@workstation ~]$ cd DO180
+[student@workstation DO180]$ cd lab
+bash: cd: lab: No such file or directory
+[student@workstation DO180]$ cd labs
+[student@workstation labs]$ ls
+container-review  dockerfile-create  dockerfile-review  manage-networking
+[student@workstation labs]$ cd dockerfile-review/
+[student@workstation dockerfile-review]$ ll
+total 8
+-rw-r--r--. 1 student student 473 Apr  3 14:53 Dockerfile
+drwxr-xr-x. 2 student student  24 Apr  3 14:53 src
+-rw-r--r--. 1 student student 684 Apr  3 14:53 training.repo
+[student@workstation dockerfile-review]$ rm Dockerfile 
+[student@workstation dockerfile-review]$ vim Dockerfile
+[student@workstation dockerfile-review]$ sudo podman build -t do180/custom-apache .
+STEP 1: FROM ubi7/ubi:7.7
+Getting image source signatures
+Copying blob sha256:fcd63ccfdd0ccd78cc0b23a6e9cef0c400625c1506f3eed694d92c7ced04b4c4
+ 72.72 MB / ? [------=-----------------------------------------------------] 4s 
+Copying blob sha256:09dbbf8834d2d84d8d8a37dcf7d6049794c9c8c604a3d3f2606768a82771438d
+ 1.57 KB / ? [-------------------------------------------------------------=] 0s
+Copying config sha256:0355cd652bd1c4afd8d8f2cd8d0a4887196cb4808b8f803e146ec266ecdd5aa2
+ 4.32 KB / 4.32 KB [========================================================] 0s
+Writing manifest to image destination
+Storing signatures
+STEP 2: MAINTAINER Your Name <youremail>
+ERRO[0010] HOSTNAME is not supported for OCI image format, hostname 1a6370b10892 will be ignored. Must use `docker` format 
+--> 17d0ec7c2b1b829647f2b55c8158b9a258055bca56d3b816fb214fb52b7f6e74
+STEP 3: FROM 17d0ec7c2b1b829647f2b55c8158b9a258055bca56d3b816fb214fb52b7f6e74
+STEP 4: ENV PORT 8080
+--> 2cdd22cac630ac0be9b9fdc47f6de06a74197081968b9bd0f48477c33bba627e
+STEP 5: FROM 2cdd22cac630ac0be9b9fdc47f6de06a74197081968b9bd0f48477c33bba627e
+STEP 6: RUN yum install -y httpd && yum clean all
+Loaded plugins: ovl, product-id, search-disabled-repos, subscription-manager
+This system is not receiving updates. You can use subscription-manager on the host to register and assign subscriptions.
+ubi-7                                                    | 3.8 kB     00:00     
+ubi-7-rhah                                               | 3.7 kB     00:00     
+ubi-7-server-devtools-rpms                               | 3.8 kB     00:00     
+ubi-7-server-extras-rpms                                 | 3.7 kB     00:00     
+ubi-7-server-optional-rpms                               | 3.8 kB     00:00     
+ubi-server-rhscl-7-rpms                                  | 3.8 kB     00:00     
+(1/18): ubi-7/x86_64/updateinfo                            |   92 B   00:00     
+(2/18): ubi-7/x86_64/group                                 |  124 B   00:00     
+(3/18): ubi-7/x86_64/primary_db                            | 797 kB   00:00     
+(4/18): ubi-7-rhah/x86_64/updateinfo                       |   92 B   00:00     
+(5/18): ubi-7-rhah/x86_64/group                            |  124 B   00:00     
+(6/18): ubi-7-rhah/x86_64/primary_db                       | 2.5 kB   00:00     
+(7/18): ubi-7-server-devtools-rpms/x86_64/updateinfo       |   92 B   00:00     
+(8/18): ubi-7-server-devtools-rpms/x86_64/group            |  124 B   00:00     
+(9/18): ubi-7-server-devtools-rpms/x86_64/primary_db       | 8.6 kB   00:00     
+(10/18): ubi-7-server-extras-rpms/x86_64/group             |  124 B   00:00     
+(11/18): ubi-7-server-extras-rpms/x86_64/updateinfo        |   92 B   00:00     
+(12/18): ubi-7-server-extras-rpms/x86_64/primary_db        | 6.7 kB   00:00     
+(13/18): ubi-7-server-optional-rpms/x86_64/group           |  124 B   00:00     
+(14/18): ubi-7-server-optional-rpms/x86_64/updateinfo      |   92 B   00:00     
+(15/18): ubi-7-server-optional-rpms/x86_64/primary_db      |  14 kB   00:00     
+(16/18): ubi-server-rhscl-7-rpms/x86_64/group              |  124 B   00:00     
+(17/18): ubi-server-rhscl-7-rpms/x86_64/updateinfo         |   92 B   00:00     
+(18/18): ubi-server-rhscl-7-rpms/x86_64/primary_db         | 260 kB   00:00     
+Resolving Dependencies
+--> Running transaction check
+---> Package httpd.x86_64 0:2.4.6-93.el7 will be installed
+--> Processing Dependency: httpd-tools = 2.4.6-93.el7 for package: httpd-2.4.6-93.el7.x86_64
+--> Processing Dependency: system-logos >= 7.92.1-1 for package: httpd-2.4.6-93.el7.x86_64
+--> Processing Dependency: /etc/mime.types for package: httpd-2.4.6-93.el7.x86_64
+--> Processing Dependency: libapr-1.so.0()(64bit) for package: httpd-2.4.6-93.el7.x86_64
+--> Processing Dependency: libaprutil-1.so.0()(64bit) for package: httpd-2.4.6-93.el7.x86_64
+--> Running transaction check
+---> Package apr.x86_64 0:1.4.8-5.el7 will be installed
+---> Package apr-util.x86_64 0:1.5.2-6.el7 will be installed
+---> Package httpd-tools.x86_64 0:2.4.6-93.el7 will be installed
+---> Package mailcap.noarch 0:2.1.41-2.el7 will be installed
+---> Package redhat-logos.noarch 0:70.7.0-1.el7 will be installed
+--> Finished Dependency Resolution
+
+Dependencies Resolved
+
+================================================================================
+ Package              Arch           Version                Repository     Size
+================================================================================
+Installing:
+ httpd                x86_64         2.4.6-93.el7           ubi-7         1.2 M
+Installing for dependencies:
+ apr                  x86_64         1.4.8-5.el7            ubi-7         104 k
+ apr-util             x86_64         1.5.2-6.el7            ubi-7          92 k
+ httpd-tools          x86_64         2.4.6-93.el7           ubi-7          92 k
+ mailcap              noarch         2.1.41-2.el7           ubi-7          31 k
+ redhat-logos         noarch         70.7.0-1.el7           ubi-7          13 M
+
+Transaction Summary
+================================================================================
+Install  1 Package (+5 Dependent packages)
+
+Total download size: 15 M
+Installed size: 18 M
+Downloading packages:
+warning: /var/cache/yum/x86_64/7Server/ubi-7/packages/apr-util-1.5.2-6.el7.x86_64.rpm: Header V3 RSA/SHA256 Signature, key ID fd431d51: NOKEY
+Public key for apr-util-1.5.2-6.el7.x86_64.rpm is not installed
+(1/6): apr-util-1.5.2-6.el7.x86_64.rpm                     |  92 kB   00:00     
+(2/6): apr-1.4.8-5.el7.x86_64.rpm                          | 104 kB   00:00     
+(3/6): httpd-tools-2.4.6-93.el7.x86_64.rpm                 |  92 kB   00:00     
+(4/6): httpd-2.4.6-93.el7.x86_64.rpm                       | 1.2 MB   00:00     
+(5/6): mailcap-2.1.41-2.el7.noarch.rpm                     |  31 kB   00:00     
+(6/6): redhat-logos-70.7.0-1.el7.noarch.rpm                |  13 MB   00:00     
+--------------------------------------------------------------------------------
+Total                                               17 MB/s |  15 MB  00:00     
+Retrieving key from file:///etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+Importing GPG key 0xFD431D51:
+ Userid     : "Red Hat, Inc. (release key 2) <security@redhat.com>"
+ Fingerprint: 567e 347a d004 4ade 55ba 8a5f 199e 2f91 fd43 1d51
+ Package    : redhat-release-server-7.7-10.el7.x86_64 (@anaconda/7.7)
+ From       : /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+Importing GPG key 0x2FA658E0:
+ Userid     : "Red Hat, Inc. (auxiliary key) <security@redhat.com>"
+ Fingerprint: 43a6 e49c 4a38 f4be 9abf 2a53 4568 9c88 2fa6 58e0
+ Package    : redhat-release-server-7.7-10.el7.x86_64 (@anaconda/7.7)
+ From       : /etc/pki/rpm-gpg/RPM-GPG-KEY-redhat-release
+Running transaction check
+Running transaction test
+Transaction test succeeded
+Running transaction
+  Installing : apr-1.4.8-5.el7.x86_64                                       1/6 
+  Installing : apr-util-1.5.2-6.el7.x86_64                                  2/6 
+  Installing : httpd-tools-2.4.6-93.el7.x86_64                              3/6 
+  Installing : redhat-logos-70.7.0-1.el7.noarch                             4/6 
+  Installing : mailcap-2.1.41-2.el7.noarch                                  5/6 
+  Installing : httpd-2.4.6-93.el7.x86_64                                    6/6 
+  Verifying  : mailcap-2.1.41-2.el7.noarch                                  1/6 
+  Verifying  : apr-util-1.5.2-6.el7.x86_64                                  2/6 
+  Verifying  : apr-1.4.8-5.el7.x86_64                                       3/6 
+  Verifying  : httpd-2.4.6-93.el7.x86_64                                    4/6 
+  Verifying  : redhat-logos-70.7.0-1.el7.noarch                             5/6 
+  Verifying  : httpd-tools-2.4.6-93.el7.x86_64                              6/6 
+
+Installed:
+  httpd.x86_64 0:2.4.6-93.el7                                                   
+
+Dependency Installed:
+  apr.x86_64 0:1.4.8-5.el7                  apr-util.x86_64 0:1.5.2-6.el7       
+  httpd-tools.x86_64 0:2.4.6-93.el7         mailcap.noarch 0:2.1.41-2.el7       
+  redhat-logos.noarch 0:70.7.0-1.el7       
+
+Complete!
+Loaded plugins: ovl, product-id, search-disabled-repos, subscription-manager
+This system is not receiving updates. You can use subscription-manager on the host to register and assign subscriptions.
+Cleaning repos: ubi-7 ubi-7-rhah ubi-7-server-devtools-rpms
+              : ubi-7-server-extras-rpms ubi-7-server-optional-rpms
+              : ubi-server-rhscl-7-rpms
+--> 782e41c281b73cfa589f9fd82b8fb6d0f8c9e11b408a4584d96b20a4f67a3161
+STEP 7: FROM 782e41c281b73cfa589f9fd82b8fb6d0f8c9e11b408a4584d96b20a4f67a3161
+STEP 8: RUN sed -ri -e "/^Listen 80/c\Listen ${PORT}" /etc/httpd/conf/httpd.conf && chown -R apache:apache /etc/httpd/logs/ && chown -R apache:apache /run/httpd/
+--> af4f3bcf849c80634398b3f7479f72cd45042fb1546416e91bbc24ea1c05b2b5
+STEP 9: FROM af4f3bcf849c80634398b3f7479f72cd45042fb1546416e91bbc24ea1c05b2b5
+STEP 10: USER apache
+--> 8302a899ad127c64256c9eb358b05e1611280549e7cc6bc8bb18e643efb77f9a
+STEP 11: FROM 8302a899ad127c64256c9eb358b05e1611280549e7cc6bc8bb18e643efb77f9a
+STEP 12: EXPOSE ${PORT}
+--> b16688ce1120b1f3402432ca6c826cb328327b6ab94169adf6624b7457775d90
+STEP 13: FROM b16688ce1120b1f3402432ca6c826cb328327b6ab94169adf6624b7457775d90
+STEP 14: COPY ./src/ /var/www/html/
+--> 9ec6ea4f3c0b199b9a6ecd5f8a1ec3ac551e85d79a9532d66dac472e487cc29c
+STEP 15: FROM 9ec6ea4f3c0b199b9a6ecd5f8a1ec3ac551e85d79a9532d66dac472e487cc29c
+STEP 16: CMD ["httpd", "-D", "FOREGROUND"]
+--> 3dce7cb7cc617b29e6f8b5207098322131286b636cdf4fd119b4d285a460e1d3
+STEP 17: COMMIT do180/custom-apache
+[student@workstation dockerfile-review]$ sudo podman ps
+[student@workstation dockerfile-review]$ sudo podman run -d \
+> ^C
+[student@workstation dockerfile-review]$ sudo podman run -d --name dockerfile -p 20080:8080 do180/custom-apache
+e2e315c2fae1d513569c2f040a4044ea49ae8e072ffec4a360d1532c088d81e6
+[student@workstation dockerfile-review]$ curl 127.0.0.1:20080
+<html>
+ <header><title>DO180 Hello!</title></header>
+ <body>
+   Hello World! The dockerfile-review lab works!
+ </body>
+</html>
+[student@workstation dockerfile-review]$ lab dockerfile-review grade
+
+Grading the student's work for Lab: Creating Custom Container Images
+
+ · Check for apache container image............................  PASS
+ · Check if the container is running...........................  PASS
+ · Verifying if httpd was installed correctly in apache image..  PASS
+ · Verifying if hello world is running on server...............  PASS
+ · Stopping grade container....................................  SUCCESS
+ · Removing grade container....................................  SUCCESS
+
+[student@workstation dockerfile-review]$ lab dockerfile-review finish
+
+Completing the Lab: Creating Custom Container Images
+
+ · Stopping running container..................................  SUCCESS
+ · Removing the container......................................  SUCCESS
+ · Removing do180/custom-apache container image................  SUCCESS
+ · Removing ubi7 container image...............................  SUCCESS
+
+[student@workstation dockerfile-review]$ cd ~
+[student@workstation ~]$ lab openshift-resources start
+
+Setting up workstation for the Guided Exercise: Deploying a Database Server on OpenShift
+
+ Verifying the OpenShift cluster is running:
+ · Log in on OpenShift.........................................  SUCCESS
+ · Check the internal registry is up and running...............  SUCCESS
+ · Ensuring the 'carol-liang-mysql-openshift' project is absent  SUCCESS
+[student@workstation ~]$ source /usr/local/etc/ocp4.config
+[student@workstation ~]$ more info.txt 
+username carol-liang
+password 016bb774b4444ba88e57
+API endpoint https://api.ocp-na2.prod.nextcle.com:6443
+console web app: https://console-openshift-console.apps.ocp-na2.prod.nextcle.com
+cluster id: 57c48a8d-c97b-433f-86f2-c6c80c516bed
+
+[student@workstation ~]$ oc login -u carol_liang -p 016bb774b4444ba88e57 https://api.ocp-na2.prod.nextcle.com:6443
+Login failed (401 Unauthorized)
+Verify you have provided correct credentials.
+[student@workstation ~]$ oc login -u carol-liang -p 016bb774b4444ba88e57 https://api.ocp-na2.prod.nextcle.com:6443
+Login successful.
+
+You don't have any projects. You can try to create a new project, by running
+
+    oc new-project <projectname>
+
+[student@workstation ~]$ oc new-project carol-liang-mysql-openshift
+Now using project "carol-liang-mysql-openshift" on server "https://api.ocp-na2.prod.nextcle.com:6443".
+
+You can add applications to this project with the 'new-app' command. For example, try:
+
+    oc new-app django-psql-example
+
+to build a new example application in Python. Or use kubectl to deploy a simple Kubernetes application:
+
+    kubectl create deployment hello-node --image=gcr.io/hello-minikube-zero-install/hello-node
+
+[student@workstation ~]$ oc new-app --docker-image=registry.access.redhat.com/rhscl/mysql-57-rhel7:latest  --name=mysql-openshift -e MYSQL_USER=user1 -e MYSQL_PASSWORD=mypa55 -e MYSQL_DATABASE=testdb -e MYSQL_ROOT_PASSWORD=r00tpa55
+--> Found Docker image 60726b3 (10 months old) from registry.access.redhat.com for "registry.access.redhat.com/rhscl/mysql-57-rhel7:latest"
+
+    MySQL 5.7 
+    --------- 
+    MySQL is a multi-user, multi-threaded SQL database server. The container image provides a containerized packaging of the MySQL mysqld daemon and client application. The mysqld server daemon accepts connections from clients and provides access to content from MySQL databases on behalf of the clients.
+
+    Tags: database, mysql, mysql57, rh-mysql57
+
+    * An image stream tag will be created as "mysql-openshift:latest" that will track this image
+    * This image will be deployed in deployment config "mysql-openshift"
+    * Port 3306/tcp will be load balanced by service "mysql-openshift"
+      * Other containers can access this service through the hostname "mysql-openshift"
+
+--> Creating resources ...
+    imagestream.image.openshift.io "mysql-openshift" created
+    deploymentconfig.apps.openshift.io "mysql-openshift" created
+    service "mysql-openshift" created
+--> Success
+    Application is not exposed. You can expose services to the outside world by executing one or more of the commands below:
+     'oc expose svc/mysql-openshift' 
+    Run 'oc status' to view your app.
+[student@workstation ~]$ oc status
+In project carol-liang-mysql-openshift on server https://api.ocp-na2.prod.nextcle.com:6443
+
+svc/mysql-openshift - 172.30.96.180:3306
+  dc/mysql-openshift deploys istag/mysql-openshift:latest 
+    deployment #1 deployed 25 seconds ago - 1 pod
+
+
+3 infos identified, use 'oc status --suggest' to see details.
+[student@workstation ~]$ oc get pods -o=wide
+NAME                       READY   STATUS      RESTARTS   AGE   IP            NODE                         NOMINATED NODE   READINESS GATES
+mysql-openshift-1-deploy   0/1     Completed   0          91s   10.128.11.7   ip-10-0-148-0.ec2.internal   <none>           <none>
+mysql-openshift-1-kmd52    1/1     Running     0          82s   10.128.11.8   ip-10-0-148-0.ec2.internal   <none>           <none>
+[student@workstation ~]$ oc describe pod mysql-openshift-1-glqrp
+Error from server (NotFound): pods "mysql-openshift-1-glqrp" not found
+[student@workstation ~]$ oc describe pod mysql-openshift-1-kmd52
+Name:               mysql-openshift-1-kmd52
+Namespace:          carol-liang-mysql-openshift
+Priority:           0
+PriorityClassName:  <none>
+Node:               ip-10-0-148-0.ec2.internal/10.0.148.0
+Start Time:         Tue, 11 Aug 2020 19:09:40 +0000
+Labels:             app=mysql-openshift
+                    deployment=mysql-openshift-1
+                    deploymentconfig=mysql-openshift
+Annotations:        k8s.v1.cni.cncf.io/networks-status:
+                      [{
+                          "name": "openshift-sdn",
+                          "interface": "eth0",
+                          "ips": [
+                              "10.128.11.8"
+                          ],
+                          "default": true,
+                          "dns": {}
+                      }]
+                    kubernetes.io/limit-ranger:
+                      LimitRanger plugin set: cpu, memory request for container mysql-openshift; cpu, memory limit for container mysql-openshift
+                    openshift.io/deployment-config.latest-version: 1
+                    openshift.io/deployment-config.name: mysql-openshift
+                    openshift.io/deployment.name: mysql-openshift-1
+                    openshift.io/generated-by: OpenShiftNewApp
+                    openshift.io/scc: restricted
+Status:             Running
+IP:                 10.128.11.8
+Controlled By:      ReplicationController/mysql-openshift-1
+Containers:
+  mysql-openshift:
+    Container ID:   cri-o://c330b4723a4cae72d17a5d51cba6d6dc4d4b5af8d1a02e993848fdd27b50582b
+    Image:          registry.access.redhat.com/rhscl/mysql-57-rhel7@sha256:9a781abe7581cc141e14a7e404ec34125b3e89c008b14f4e7b41e094fd3049fe
+    Image ID:       image-registry.openshift-image-registry.svc:5000/openshift/mysql@sha256:9a781abe7581cc141e14a7e404ec34125b3e89c008b14f4e7b41e094fd3049fe
+    Port:           3306/TCP
+    Host Port:      0/TCP
+    State:          Running
+      Started:      Tue, 11 Aug 2020 19:09:49 +0000
+    Ready:          True
+    Restart Count:  0
+    Limits:
+      cpu:     1
+      memory:  2Gi
+    Requests:
+      cpu:     5m
+      memory:  50Mi
+    Environment:
+      MYSQL_DATABASE:       testdb
+      MYSQL_PASSWORD:       mypa55
+      MYSQL_ROOT_PASSWORD:  r00tpa55
+      MYSQL_USER:           user1
+    Mounts:
+      /var/run/secrets/kubernetes.io/serviceaccount from default-token-h9mb2 (ro)
+Conditions:
+  Type              Status
+  Initialized       True 
+  Ready             True 
+  ContainersReady   True 
+  PodScheduled      True 
+Volumes:
+  default-token-h9mb2:
+    Type:        Secret (a volume populated by a Secret)
+    SecretName:  default-token-h9mb2
+    Optional:    false
+QoS Class:       Burstable
+Node-Selectors:  <none>
+Tolerations:     node.kubernetes.io/memory-pressure:NoSchedule
+                 node.kubernetes.io/not-ready:NoExecute for 300s
+                 node.kubernetes.io/unreachable:NoExecute for 300s
+Events:
+  Type    Reason     Age    From                                 Message
+  ----    ------     ----   ----                                 -------
+  Normal  Scheduled  2m17s  default-scheduler                    Successfully assigned carol-liang-mysql-openshift/mysql-openshift-1-kmd52 to ip-10-0-148-0.ec2.internal
+  Normal  Pulling    2m9s   kubelet, ip-10-0-148-0.ec2.internal  Pulling image "registry.access.redhat.com/rhscl/mysql-57-rhel7@sha256:9a781abe7581cc141e14a7e404ec34125b3e89c008b14f4e7b41e094fd3049fe"
+  Normal  Pulled     2m9s   kubelet, ip-10-0-148-0.ec2.internal  Successfully pulled image "registry.access.redhat.com/rhscl/mysql-57-rhel7@sha256:9a781abe7581cc141e14a7e404ec34125b3e89c008b14f4e7b41e094fd3049fe"
+  Normal  Created    2m8s   kubelet, ip-10-0-148-0.ec2.internal  Created container mysql-openshift
+  Normal  Started    2m8s   kubelet, ip-10-0-148-0.ec2.internal  Started container mysql-openshift
+[student@workstation ~]$ oc get svc
+NAME              TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+mysql-openshift   ClusterIP   172.30.96.180   <none>        3306/TCP   3m44s
+[student@workstation ~]$ oc describe service mysql-openshift
+Name:              mysql-openshift
+Namespace:         carol-liang-mysql-openshift
+Labels:            app=mysql-openshift
+Annotations:       openshift.io/generated-by: OpenShiftNewApp
+Selector:          app=mysql-openshift,deploymentconfig=mysql-openshift
+Type:              ClusterIP
+IP:                172.30.96.180
+Port:              3306-tcp  3306/TCP
+TargetPort:        3306/TCP
+Endpoints:         10.128.11.8:3306
+Session Affinity:  None
+Events:            <none>
+[student@workstation ~]$ oc describe dc mysql-openshift
+Name:		mysql-openshift
+Namespace:	carol-liang-mysql-openshift
+Created:	5 minutes ago
+Labels:		app=mysql-openshift
+Annotations:	openshift.io/generated-by=OpenShiftNewApp
+Latest Version:	1
+Selector:	app=mysql-openshift,deploymentconfig=mysql-openshift
+Replicas:	1
+Triggers:	Config, Image(mysql-openshift@latest, auto=true)
+Strategy:	Rolling
+Template:
+Pod Template:
+  Labels:	app=mysql-openshift
+		deploymentconfig=mysql-openshift
+  Annotations:	openshift.io/generated-by: OpenShiftNewApp
+  Containers:
+   mysql-openshift:
+    Image:	registry.access.redhat.com/rhscl/mysql-57-rhel7@sha256:9a781abe7581cc141e14a7e404ec34125b3e89c008b14f4e7b41e094fd3049fe
+    Port:	3306/TCP
+    Host Port:	0/TCP
+    Environment:
+      MYSQL_DATABASE:		testdb
+      MYSQL_PASSWORD:		mypa55
+      MYSQL_ROOT_PASSWORD:	r00tpa55
+      MYSQL_USER:		user1
+    Mounts:			<none>
+  Volumes:			<none>
+
+Deployment #1 (latest):
+	Name:		mysql-openshift-1
+	Created:	5 minutes ago
+	Status:		Complete
+	Replicas:	1 current / 1 desired
+	Selector:	app=mysql-openshift,deployment=mysql-openshift-1,deploymentconfig=mysql-openshift
+	Labels:		app=mysql-openshift,openshift.io/deployment-config.name=mysql-openshift
+	Pods Status:	1 Running / 0 Waiting / 0 Succeeded / 0 Failed
+
+Events:
+  Type		Reason			Age	From				Message
+  ----		------			----	----				-------
+  Normal	DeploymentCreated	5m19s	deploymentconfig-controller	Created new replication controller "mysql-openshift-1" for version 1
+[student@workstation ~]$ oc expose service mysql-openshift
+route.route.openshift.io/mysql-openshift exposed
+[student@workstation ~]$ oc get routes
+NAME              HOST/PORT                                                                   PATH   SERVICES          PORT       TERMINATION   WILDCARD
+mysql-openshift   mysql-openshift-carol-liang-mysql-openshift.apps.ocp-na2.prod.nextcle.com          mysql-openshift   3306-tcp                 None
+[student@workstation ~]$ oc status
+In project carol-liang-mysql-openshift on server https://api.ocp-na2.prod.nextcle.com:6443
+
+http://mysql-openshift-carol-liang-mysql-openshift.apps.ocp-na2.prod.nextcle.com to pod port 3306-tcp (svc/mysql-openshift)
+  dc/mysql-openshift deploys istag/mysql-openshift:latest 
+    deployment #1 deployed 8 minutes ago - 1 pod
+
+
+3 infos identified, use 'oc status --suggest' to see details.
+[student@workstation ~]$ oc get pods
+NAME                       READY   STATUS      RESTARTS   AGE
+mysql-openshift-1-deploy   0/1     Completed   0          8m34s
+mysql-openshift-1-kmd52    1/1     Running     0          8m25s
+[student@workstation ~]$ oc port-forward mysql-openshift-1-kmd52 3306:3306
+Forwarding from 127.0.0.1:3306 -> 3306
+Forwarding from [::1]:3306 -> 3306
+Handling connection for 3306
+^C[student@workstation ~]$ 
+[student@workstation ~]$ 
+[student@workstation ~]$ oc delete project carol-liang-mysql-openshift
+project.project.openshift.io "carol-liang-mysql-openshift" deleted
+[student@workstation ~]$ lab openshift-resources finish
+
+Completing the Guided Exercise: Deploying a Database Server on OpenShift
+
+ · Deleting the 'carol-liang-mysql-openshift' project..........  SUCCESS
+[student@workstation ~]$ 
+
+rkstation ~]$ lab openshift-routes start
+
+Setting up workstation for the Guided Exercise: Exposing a Service as a Route
+
+ Verifying the OpenShift cluster is running:
+ · Log in on OpenShift.........................................  SUCCESS
+ · Check the internal registry is up and running...............  SUCCESS
+ · Ensuring the 'carol-liang-route' project does not exist.....  SUCCESS
+[student@workstation ~]$ source /usr/local/etc/ocp4.config
+[student@workstation ~]$ oc login -u carol-liang -p 016bb774b4444ba88e57 https://api.ocp-na2.prod.nextcle.com:6443
+Login successful.
+
+You don't have any projects. You can try to create a new project, by running
+
+    oc new-project <projectname>
+
+[student@workstation ~]$ oc new-project carol-liang-route
+Now using project "carol-liang-route" on server "https://api.ocp-na2.prod.nextcle.com:6443".
+
+You can add applications to this project with the 'new-app' command. For example, try:
+
+    oc new-app django-psql-example
+
+to build a new example application in Python. Or use kubectl to deploy a simple Kubernetes application:
+
+    kubectl create deployment hello-node --image=gcr.io/hello-minikube-zero-install/hello-node
+
+[student@workstation ~]$ oc new-app php:7.1~https://github.com/carol101/DO180-apps --context-dir php-helloworld --name php-helloworld
+--> Found image 8e01e80 (8 months old) in image stream "openshift/php" under tag "7.1" for "php:7.1"
+
+    Apache 2.4 with PHP 7.1 
+    ----------------------- 
+    PHP 7.1 available as container is a base platform for building and running various PHP 7.1 applications and frameworks. PHP is an HTML-embedded scripting language. PHP attempts to make it easy for developers to write dynamically generated web pages. PHP also offers built-in database integration for several commercial and non-commercial database management systems, so writing a database-enabled webpage with PHP is fairly simple. The most common use of PHP coding is probably as a replacement for CGI scripts.
+
+    Tags: builder, php, php71, rh-php71
+
+    * A source build using source code from https://github.com/carol101/DO180-apps will be created
+      * The resulting image will be pushed to image stream tag "php-helloworld:latest"
+      * Use 'oc start-build' to trigger a new build
+    * This image will be deployed in deployment config "php-helloworld"
+    * Ports 8080/tcp, 8443/tcp will be load balanced by service "php-helloworld"
+      * Other containers can access this service through the hostname "php-helloworld"
+
+--> Creating resources ...
+    imagestream.image.openshift.io "php-helloworld" created
+    buildconfig.build.openshift.io "php-helloworld" created
+    deploymentconfig.apps.openshift.io "php-helloworld" created
+    service "php-helloworld" created
+--> Success
+    Build scheduled, use 'oc logs -f bc/php-helloworld' to track its progress.
+    Application is not exposed. You can expose services to the outside world by executing one or more of the commands below:
+     'oc expose svc/php-helloworld' 
+    Run 'oc status' to view your app.
+[student@workstation ~]$ oc get pods -w
+NAME                     READY   STATUS     RESTARTS   AGE
+php-helloworld-1-build   0/1     Init:0/2   0          18s
+php-helloworld-1-build   0/1   Init:0/2   0     22s
+php-helloworld-1-build   0/1   Init:0/2   0     25s
+php-helloworld-1-build   0/1   Init:1/2   0     26s
+php-helloworld-1-build   0/1   PodInitializing   0     27s
+php-helloworld-1-build   1/1   Running   0     28s
+php-helloworld-1-deploy   0/1   Pending   0     0s
+php-helloworld-1-deploy   0/1   Pending   0     0s
+php-helloworld-1-deploy   0/1   ContainerCreating   0     0s
+php-helloworld-1-build   0/1   Completed   0     109s
+php-helloworld-1-build   0/1   Completed   0     109s
+php-helloworld-1-deploy   0/1   ContainerCreating   0     12s
+php-helloworld-1-57z6m   0/1   Pending   0     0s
+php-helloworld-1-57z6m   0/1   Pending   0     0s
+php-helloworld-1-57z6m   0/1   ContainerCreating   0     0s
+php-helloworld-1-deploy   1/1   Running   0     15s
+php-helloworld-1-57z6m   0/1   ContainerCreating   0     9s
+php-helloworld-1-57z6m   1/1   Running   0     12s
+php-helloworld-1-deploy   0/1   Completed   0     27s
+php-helloworld-1-deploy   0/1   Completed   0     27s
+php-helloworld-1-57z6m   1/1   Terminating   0     10m
+php-helloworld-1-build   0/1   Terminating   0     13m
+php-helloworld-1-build   0/1   Terminating   0     13m
+php-helloworld-1-deploy   0/1   Terminating   0     11m
+php-helloworld-1-deploy   0/1   Terminating   0     11m
+php-helloworld-1-57z6m   1/1   Terminating   0     10m
+php-helloworld-1-57z6m   0/1   Terminating   0     11m
+php-helloworld-1-57z6m   0/1   Terminating   0     11m
+php-helloworld-1-57z6m   0/1   Terminating   0     11m
+ --- the above is the monitoring of the system, during this time I opened the other terminal and have the following:
+
+[student@workstation ~]$ oc logs -f bc/php-helloworld
+Cloning "https://github.com/carol101/DO180-apps" ...
+	Commit:	f7cd8963ef353d9173c3a21dcccf402f3616840b (Initial commit, including all apps previously in course)
+	Author:	Jordi Sola <someth2say@gmail.com>
+	Date:	Fri Oct 4 13:04:03 2019 +0200
+Caching blobs under "/var/cache/blobs".
+Getting image source signatures
+Copying blob sha256:48ed3bfd822646e50676cd7606af43e984db141bb1755904362f1eb64684c68a
+Copying blob sha256:ad46648f2433aa416763060fb4baaefe64baeda603d4e572f883c21c5482fea1
+Copying blob sha256:9c9d2ac50b32c2bb48d07fb4e80e81552acc76ade952777f5deb05fdac8f88c6
+Copying blob sha256:16df3eb2f02e0560f09ae997a937d135f747b970d5c2c9bf30b6de874827f3ba
+Copying blob sha256:d327c1598329494579ba3d62999df41f11bff9a2bfad57fb49b30324404ac42a
+Copying config sha256:8e01e80b24124ddc69686179b836d01cb818bad93be2e59e13c3ab7b0ff16196
+Writing manifest to image destination
+Storing signatures
+Generating dockerfile with builder image image-registry.openshift-image-registry.svc:5000/openshift/php@sha256:289ef5852151a1a3ea4fdf2581a86a60ada0719e54a5ddd78f5252742e6d2b8d
+STEP 1: FROM image-registry.openshift-image-registry.svc:5000/openshift/php@sha256:289ef5852151a1a3ea4fdf2581a86a60ada0719e54a5ddd78f5252742e6d2b8d
+STEP 2: LABEL "io.openshift.build.commit.ref"="master" "io.openshift.build.commit.message"="Initial commit, including all apps previously in course" "io.openshift.build.source-location"="https://github.com/carol101/DO180-apps" "io.openshift.build.source-context-dir"="php-helloworld" "io.openshift.build.image"="image-registry.openshift-image-registry.svc:5000/openshift/php@sha256:289ef5852151a1a3ea4fdf2581a86a60ada0719e54a5ddd78f5252742e6d2b8d" "io.openshift.build.commit.author"="Jordi Sola <someth2say@gmail.com>" "io.openshift.build.commit.date"="Fri Oct 4 13:04:03 2019 +0200" "io.openshift.build.commit.id"="f7cd8963ef353d9173c3a21dcccf402f3616840b"
+STEP 3: ENV OPENSHIFT_BUILD_NAME="php-helloworld-1" OPENSHIFT_BUILD_NAMESPACE="carol-liang-route" OPENSHIFT_BUILD_SOURCE="https://github.com/carol101/DO180-apps" OPENSHIFT_BUILD_COMMIT="f7cd8963ef353d9173c3a21dcccf402f3616840b"
+STEP 4: USER root
+STEP 5: COPY upload/src /tmp/src
+STEP 6: RUN chown -R 1001:0 /tmp/src
+time="2020-08-11T19:40:25Z" level=warning msg="pkg/chroot: error unmounting \"/tmp/buildah309448242/mnt/rootfs\": error checking if \"/tmp/buildah309448242/mnt/rootfs/sys/fs/cgroup/devices\" is mounted: no such file or directory"
+time="2020-08-11T19:40:25Z" level=warning msg="pkg/bind: error unmounting \"/tmp/buildah309448242/mnt/rootfs\": error checking if \"/tmp/buildah309448242/mnt/rootfs/sys/fs/cgroup/devices\" is mounted: no such file or directory"
+STEP 7: USER 1001
+STEP 8: RUN /usr/libexec/s2i/assemble
+---> Installing application source...
+=> sourcing 20-copy-config.sh ...
+---> 19:40:27     Processing additional arbitrary httpd configuration provided by s2i ...
+=> sourcing 00-documentroot.conf ...
+=> sourcing 50-mpm-tuning.conf ...
+=> sourcing 40-ssl-certs.sh ...
+time="2020-08-11T19:40:28Z" level=warning msg="pkg/chroot: error unmounting \"/tmp/buildah331341287/mnt/rootfs\": error checking if \"/tmp/buildah331341287/mnt/rootfs/sys/fs/cgroup/devices\" is mounted: no such file or directory"
+time="2020-08-11T19:40:28Z" level=warning msg="pkg/bind: error unmounting \"/tmp/buildah331341287/mnt/rootfs\": error checking if \"/tmp/buildah331341287/mnt/rootfs/sys/fs/cgroup/devices\" is mounted: no such file or directory"
+STEP 9: CMD /usr/libexec/s2i/run
+STEP 10: COMMIT temp.builder.openshift.io/carol-liang-route/php-helloworld-1:52edf4bb
+Getting image source signatures
+Copying blob sha256:a551fb857b61df88ae64cded378611456294ee7143bc068eb3a9ee1a29934658
+Copying blob sha256:08c4aa164cbaadfb32414e39d9b252a5382b9db1dd8e028fb11805074edbe608
+Copying blob sha256:7c6c57a17fb3de2b83515a0e33782d6d769fa90725da4eb75311e5ffbf601e49
+Copying blob sha256:c3b514cae9b11a6aadc78fdbb3d7b71226759927a8149f97ea400628744ad2c9
+Copying blob sha256:67ce50f5984a7a2ae8efd16c0dd2780e95982256be555d4e9a272357783ec338
+Copying blob sha256:c6be6be6913ebe24adb39c0847323f2d7418eec219b6f6f19231f79efbc0a14e
+Copying config sha256:ccce1c7e9d5c38f677846acfae22f20642b8908b6535b2d56c793e2496962cc8
+Writing manifest to image destination
+Storing signatures
+ccce1c7e9d5c38f677846acfae22f20642b8908b6535b2d56c793e2496962cc8
+Getting image source signatures
+
+Pushing image image-registry.openshift-image-registry.svc:5000/carol-liang-route/php-helloworld:latest ...
+Copying blob sha256:16df3eb2f02e0560f09ae997a937d135f747b970d5c2c9bf30b6de874827f3ba
+Copying blob sha256:9c9d2ac50b32c2bb48d07fb4e80e81552acc76ade952777f5deb05fdac8f88c6
+Copying blob sha256:d327c1598329494579ba3d62999df41f11bff9a2bfad57fb49b30324404ac42a
+Copying blob sha256:c6be6be6913ebe24adb39c0847323f2d7418eec219b6f6f19231f79efbc0a14e
+Copying blob sha256:ad46648f2433aa416763060fb4baaefe64baeda603d4e572f883c21c5482fea1
+Copying blob sha256:48ed3bfd822646e50676cd7606af43e984db141bb1755904362f1eb64684c68a
+Copying config sha256:ccce1c7e9d5c38f677846acfae22f20642b8908b6535b2d56c793e2496962cc8
+Writing manifest to image destination
+Storing signatures
+Successfully pushed image-registry.openshift-image-registry.svc:5000/carol-liang-route/php-helloworld@sha256:d49fb902b4662d30120dc6b9d39aff109bb26a4f451614e288d3287190c4078f
+Push successful
+[student@workstation ~]$ oc describe svc/php-helloworld
+Name:              php-helloworld
+Namespace:         carol-liang-route
+Labels:            app=php-helloworld
+Annotations:       openshift.io/generated-by: OpenShiftNewApp
+Selector:          app=php-helloworld,deploymentconfig=php-helloworld
+Type:              ClusterIP
+IP:                172.30.81.45
+Port:              8080-tcp  8080/TCP
+TargetPort:        8080/TCP
+Endpoints:         10.128.11.74:8080
+Port:              8443-tcp  8443/TCP
+TargetPort:        8443/TCP
+Endpoints:         10.128.11.74:8443
+Session Affinity:  None
+Events:            <none>
+[student@workstation ~]$ oc expose svc/php-helloworld
+route.route.openshift.io/php-helloworld exposed
+[student@workstation ~]$ oc describe route
+Name:			php-helloworld
+Namespace:		carol-liang-route
+Created:		11 seconds ago
+Labels:			app=php-helloworld
+Annotations:		openshift.io/host.generated=true
+Requested Host:		php-helloworld-carol-liang-route.apps.ocp-na2.prod.nextcle.com
+			  exposed on router default (host apps.ocp-na2.prod.nextcle.com) 10 seconds ago
+Path:			<none>
+TLS Termination:	<none>
+Insecure Policy:	<none>
+Endpoint Port:		8080-tcp
+
+Service:	php-helloworld
+Weight:		100 (100%)
+Endpoints:	10.128.11.74:8443, 10.128.11.74:8080
+[student@workstation ~]$ cat /usr/local/etc/ocp4.config 
+RHT_OCP4_MASTER_API=https://api.ocp-na2.prod.nextcle.com:6443
+RHT_OCP4_WILDCARD_DOMAIN=apps.ocp-na2.prod.nextcle.com
+RHT_OCP4_CLUSTER_ID=57c48a8d-c97b-433f-86f2-c6c80c516bed
+RHT_OCP4_NEXUS_SERVER=nexus-common.apps.ocp-na2.prod.nextcle.com
+RHT_OCP4_DEV_USER=carol-liang
+RHT_OCP4_DEV_PASSWORD=016bb774b4444ba88e57
+RHT_OCP4_GITHUB_USER=carol101
+RHT_OCP4_QUAY_USER=carol_liang
+[student@workstation ~]$ curl php-helloworld-${RHT_OCP4_DEV_USER}-route.
+$curl: (6) Could not resolve host: php-helloworld--route.; Unknown error
+[student@workstation ~]$ curl php-helloworld-carol-liang-route.https://api.ocp-na2.prod.nextcle.com:6443
+curl: (6) Could not resolve host: php-helloworld-carol-liang-route.https; Unknown error
+[student@workstation ~]$ oc get route
+NAME             HOST/PORT                                                        PATH   SERVICES         PORT       TERMINATION   WILDCARD
+php-helloworld   php-helloworld-carol-liang-route.apps.ocp-na2.prod.nextcle.com          php-helloworld   8080-tcp                 None
+[student@workstation ~]$ cure php-helloworld-carol-liang-route.apps.ocp-na2.prod.nextcle.com
+bash: cure: command not found...
+[student@workstation ~]$ curl php-helloworld-carol-liang-route.apps.ocp-na2.prod.nextcle.com
+Hello, World! php version is 7.1.30
+[student@workstation ~]$ oc delete route/php-helloworld
+route.route.openshift.io "php-helloworld" deleted
+[student@workstation ~]$ oc expose svc/php-helloworld --name=carol-liang-xyz
+route.route.openshift.io/carol-liang-xyz exposed
+[student@workstation ~]$ oc describe route
+Name:			carol-liang-xyz
+Namespace:		carol-liang-route
+Created:		9 seconds ago
+Labels:			app=php-helloworld
+Annotations:		openshift.io/host.generated=true
+Requested Host:		carol-liang-xyz-carol-liang-route.apps.ocp-na2.prod.nextcle.com
+			  exposed on router default (host apps.ocp-na2.prod.nextcle.com) 9 seconds ago
+Path:			<none>
+TLS Termination:	<none>
+Insecure Policy:	<none>
+Endpoint Port:		8080-tcp
+
+Service:	php-helloworld
+Weight:		100 (100%)
+Endpoints:	10.128.11.74:8443, 10.128.11.74:8080
+[student@workstation ~]$ curl carol-liang-xyz-carol-liang-route.apps.ocp-na2.prod.nextcle.com
+Hello, World! php version is 7.1.30
+[student@workstation ~]$ lab openshift-routes finish
+
+Completing the Guided Exercise: Exposing a Service as a Route
+
+ · Removing OpenShift project 'carol-liang-route'..............  SUCCESS
+[student@workstation ~]$ 
+[student@workstation ~]$ 
+[student@workstation ~]$ lab docker-build start
+
+Checking prerequisites for GE: Deploying an Application to an OpenShift Cluster
+
+ Checking local clone of the applications repository:
+ · Folder '/home/student/DO288-apps' is a git repo.............  SUCCESS
+ · Git repo '/home/student/DO288-apps' has no pending changes..  SUCCESS
+ Verifying the OpenShift cluster is running:
+ · Log in on OpenShift.........................................  SUCCESS
+ · Check master node ip-10-0-139-73.ec2.internal is ready......  SUCCESS
+ · Check master node ip-10-0-151-29.ec2.internal is ready......  SUCCESS
+ · Check master node ip-10-0-163-6.ec2.internal is ready.......  SUCCESS
+ · Check the internal registry is up and running...............  SUCCESS
+ Checking required artifacts:
+ · Project 'ubi-echo' exists in student's GitHub fork..........  SUCCESS
+ Checking for conflicts with existing OpenShift projects:
+ · Project 'carol-liang-docker-build' is absent................  SUCCESS
+
+Setting up the classroom for GE: Deploying an Application to an OpenShift Cluster
+
+ · Download exercise files.....................................  SUCCESS
+ · Download solution files.....................................  SUCCESS
+
+Overall start status...........................................  SUCCESS
+
+[student@workstation ~]$ cd DO288-apps/
+[student@workstation DO288-apps]$ git checkout master
+Already on 'master'
+[student@workstation DO288-apps]$ git checkout -b docker-build
+Switched to a new branch 'docker-build'
+[student@workstation DO288-apps]$ git push -u origin docker-build
+Username for 'https://github.com': carol101
+Password for 'https://carol101@github.com': 
+Total 0 (delta 0), reused 0 (delta 0)
+To https://github.com/carol101/DO288-apps.git
+   d3b6fa2..20d7733  docker-build -> docker-build
+Branch docker-build set up to track remote branch docker-build from origin.
+[student@workstation DO288-apps]$ cat ubi-echo/Dockerfile
+FROM registry.access.redhat.com/ubi8/ubi:8.0
+USER 1001
+CMD bash -c "while true; do echo test; sleep 5; done"
+[student@workstation DO288-apps]$ source /usr/local/etc/ocp4.config
+[student@workstation DO288-apps]$ cat /usr/local/etc/ocp4.config
+RHT_OCP4_MASTER_API=https://api.ocp-na2.prod.nextcle.com:6443
+RHT_OCP4_WILDCARD_DOMAIN=apps.ocp-na2.prod.nextcle.com
+RHT_OCP4_CLUSTER_ID=57c48a8d-c97b-433f-86f2-c6c80c516bed
+RHT_OCP4_NEXUS_SERVER=nexus-common.apps.ocp-na2.prod.nextcle.com
+RHT_OCP4_DEV_USER=carol-liang
+RHT_OCP4_DEV_PASSWORD=016bb774b4444ba88e57
+RHT_OCP4_GITHUB_USER=carol101
+RHT_OCP4_QUAY_USER=carol_liang
+[student@workstation DO288-apps]$ oc login -u carol-liang -p 016bb774b4444ba88e57 https://api.ocp-na2.prod.nextcle.com:6443
+Login successful.
+
+You don't have any projects. You can try to create a new project, by running
+
+    oc new-project <projectname>
+
+[student@workstation DO288-apps]$ oc new-project carol-liang-docker-build
+Now using project "carol-liang-docker-build" on server "https://api.ocp-na2.prod.nextcle.com:6443".
+
+You can add applications to this project with the 'new-app' command. For example, try:
+
+    oc new-app django-psql-example
+
+to build a new example application in Python. Or use kubectl to deploy a simple Kubernetes application:
+
+    kubectl create deployment hello-node --image=gcr.io/hello-minikube-zero-install/hello-node
+
+[student@workstation DO288-apps]$ oc new-app --name echo https://github.com/carol101/DO288-apps#docker-build --context-dir ubi-echo
+--> Found Docker image 11f9dba (11 months old) from registry.access.redhat.com for "registry.access.redhat.com/ubi8/ubi:8.0"
+
+    Red Hat Universal Base Image 8 
+    ------------------------------ 
+    The Universal Base Image is designed and engineered to be the base layer for all of your containerized applications, middleware and utilities. This base image is freely redistributable, but Red Hat only supports Red Hat technologies through subscriptions for Red Hat products. This image is maintained by Red Hat and updated regularly.
+
+    Tags: base rhel8
+
+    * An image stream tag will be created as "ubi:8.0" that will track the source image
+    * A Docker build using source code from https://github.com/carol101/DO288-apps#docker-build will be created
+      * The resulting image will be pushed to image stream tag "echo:latest"
+      * Every time "ubi:8.0" changes a new build will be triggered
+    * This image will be deployed in deployment config "echo"
+    * The image does not expose any ports - if you want to load balance or send traffic to this component
+      you will need to create a service with 'oc expose dc/echo --port=[port]' later
+    * WARNING: Image "registry.access.redhat.com/ubi8/ubi:8.0" runs as the 'root' user which may not be permitted by your cluster administrator
+
+--> Creating resources ...
+    imagestream.image.openshift.io "ubi" created
+    imagestream.image.openshift.io "echo" created
+    buildconfig.build.openshift.io "echo" created
+    deploymentconfig.apps.openshift.io "echo" created
+--> Success
+    Build scheduled, use 'oc logs -f bc/echo' to track its progress.
+    Run 'oc status' to view your app.
+[student@workstation DO288-apps]$ oc logs -f bc/echo
+Cloning "https://github.com/carol101/DO288-apps" ...
+	Commit:	20d773370efdfce3221f56348ba2c544558a58a3 (fix: Add a missing license file for the repository (#48))
+	Author:	Marek Czernek <mczernek@redhat.com>
+	Date:	Tue Jul 28 16:04:10 2020 +0200
+Replaced Dockerfile FROM image registry.access.redhat.com/ubi8/ubi:8.0
+Caching blobs under "/var/cache/blobs".
+
+Pulling image registry.access.redhat.com/ubi8/ubi@sha256:8275e2ad7f458e329bdc8c0e7543cff1729998fe515a281d49638246de8e39ee ...
+Getting image source signatures
+Copying blob sha256:641d7cc5cbc48a13c68806cf25d5bcf76ea2157c3181e1db4f5d0edae34954ac
+Copying blob sha256:c65691897a4d140d441e2024ce086de996b1c4620832b90c973db81329577274
+Copying config sha256:11f9dba4d1bc7bbead64adb8fd73ea92dca5fac88a9b5c2c9796abcf2e97846d
+Writing manifest to image destination
+Storing signatures
+STEP 1: FROM registry.access.redhat.com/ubi8/ubi@sha256:8275e2ad7f458e329bdc8c0e7543cff1729998fe515a281d49638246de8e39ee
+STEP 2: USER 1001
+c881a2bc50b79a2e101e0c1c8d51729d510f3b3de03f40c958e57b70f35f6e8b
+STEP 3: CMD bash -c "while true; do echo test; sleep 5; done"
+61fa4eab8697d635bdece93e51182f371911be1fcc0dbace0853323e6983ce15
+STEP 4: ENV "OPENSHIFT_BUILD_NAME"="echo-1" "OPENSHIFT_BUILD_NAMESPACE"="carol-liang-docker-build" "OPENSHIFT_BUILD_SOURCE"="https://github.com/carol101/DO288-apps" "OPENSHIFT_BUILD_REFERENCE"="docker-build" "OPENSHIFT_BUILD_COMMIT"="20d773370efdfce3221f56348ba2c544558a58a3"
+c4f8321b65a9913da819843d8766e1046e84cb741ae40de3aabf488cc3bc2887
+STEP 5: LABEL "io.openshift.build.commit.author"="Marek Czernek \u003cmczernek@redhat.com\u003e" "io.openshift.build.commit.date"="Tue Jul 28 16:04:10 2020 +0200" "io.openshift.build.commit.id"="20d773370efdfce3221f56348ba2c544558a58a3" "io.openshift.build.commit.message"="fix: Add a missing license file for the repository (#48)" "io.openshift.build.commit.ref"="docker-build" "io.openshift.build.name"="echo-1" "io.openshift.build.namespace"="carol-liang-docker-build" "io.openshift.build.source-context-dir"="ubi-echo" "io.openshift.build.source-location"="https://github.com/carol101/DO288-apps"
+STEP 6: COMMIT temp.builder.openshift.io/carol-liang-docker-build/echo-1:639d7ced
+4678c74ead39e9ad7f0f81c38165da2139f0a743873fa8ff14446dda1a70d629
+
+Pushing image image-registry.openshift-image-registry.svc:5000/carol-liang-docker-build/echo:latest ...
+Getting image source signatures
+Copying blob sha256:c65691897a4d140d441e2024ce086de996b1c4620832b90c973db81329577274
+Copying blob sha256:641d7cc5cbc48a13c68806cf25d5bcf76ea2157c3181e1db4f5d0edae34954ac
+Copying config sha256:4678c74ead39e9ad7f0f81c38165da2139f0a743873fa8ff14446dda1a70d629
+Writing manifest to image destination
+Storing signatures
+Successfully pushed image-registry.openshift-image-registry.svc:5000/carol-liang-docker-build/echo@sha256:5781ab0bd7d33446ccc5e0e2b171f1c1808f30e17865e1e4469529d56b24edb1
+Push successful
+[student@workstation DO288-apps]$ oc status
+In project carol-liang-docker-build on server https://api.ocp-na2.prod.nextcle.com:6443
+
+dc/echo deploys istag/echo:latest <-
+  bc/echo docker builds https://github.com/carol101/DO288-apps#docker-build on istag/ubi:8.0 
+  deployment #1 running for 13 seconds - 0/1 pods
+
+
+3 infos identified, use 'oc status --suggest' to see details.
+[student@workstation DO288-apps]$ oc get pod
+NAME            READY   STATUS      RESTARTS   AGE
+echo-1-4m9h8    1/1     Running     0          23s
+echo-1-build    0/1     Completed   0          80s
+echo-1-deploy   0/1     Completed   0          31s
+[student@workstation DO288-apps]$ oc get pod
+NAME            READY   STATUS      RESTARTS   AGE
+echo-1-4m9h8    1/1     Running     0          35s
+echo-1-build    0/1     Completed   0          92s
+echo-1-deploy   0/1     Completed   0          43s
+[student@workstation DO288-apps]$ oc logs echo-1-4m9h8 | tail -n 3
+test
+test
+test
+[student@workstation DO288-apps]$ oc describe bc echo
+Name:		echo
+Namespace:	carol-liang-docker-build
+Created:	2 minutes ago
+Labels:		app=echo
+Annotations:	openshift.io/generated-by=OpenShiftNewApp
+Latest Version:	1
+
+Strategy:	Docker
+URL:		https://github.com/carol101/DO288-apps
+Ref:		docker-build
+ContextDir:	ubi-echo
+From Image:	ImageStreamTag ubi:8.0
+Output to:	ImageStreamTag echo:latest
+
+Build Run Policy:	Serial
+Triggered by:		Config, ImageChange
+Webhook GitHub:
+	URL:	https://api.ocp-na2.prod.nextcle.com:6443/apis/build.openshift.io/v1/namespaces/carol-liang-docker-build/buildconfigs/echo/webhooks/<secret>/github
+Webhook Generic:
+	URL:		https://api.ocp-na2.prod.nextcle.com:6443/apis/build.openshift.io/v1/namespaces/carol-liang-docker-build/buildconfigs/echo/webhooks/<secret>/generic
+	AllowEnv:	false
+Builds History Limit:
+	Successful:	5
+	Failed:		5
+
+Build	Status		Duration	Creation Time
+echo-1 	complete 	49s 		2020-08-11 20:39:42 +0000 UTC
+
+Events:
+  Type		Reason				Age			From			Message
+  ----		------				----			----			-------
+  Warning	BuildConfigInstantiateFailed	2m47s (x8 over 2m48s)	buildconfig-controller	error instantiating Build from BuildConfig carol-liang-docker-build/echo (0): Error resolving ImageStreamTag ubi:8.0 in namespace carol-liang-docker-build: unable to find latest tagged image
+  Warning	BuildConfigTriggerFailed	2m46s			buildconfig-controller	error triggering Build for BuildConfig carol-liang-docker-build/echo: Internal error occurred: build config carol-liang-docker-build/echo has already instantiated a build for imageid registry.access.redhat.com/ubi8/ubi@sha256:8275e2ad7f458e329bdc8c0e7543cff1729998fe515a281d49638246de8e39ee
+[student@workstation DO288-apps]$ oc describe is echo
+Name:			echo
+Namespace:		carol-liang-docker-build
+Created:		3 minutes ago
+Labels:			app=echo
+Annotations:		openshift.io/generated-by=OpenShiftNewApp
+Image Repository:	default-route-openshift-image-registry.apps.ocp-na2.prod.nextcle.com/carol-liang-docker-build/echo
+Image Lookup:		local=false
+Unique Images:		1
+Tags:			1
+
+latest
+  no spec tag
+
+  * image-registry.openshift-image-registry.svc:5000/carol-liang-docker-build/echo@sha256:5781ab0bd7d33446ccc5e0e2b171f1c1808f30e17865e1e4469529d56b24edb1
+      3 minutes ago
+[student@workstation DO288-apps]$ ls
+app-config  container-build  hello-world-nginx  LICENSE     nexus3                php-helloworld  probes  README.md        todo-api-micro  todo-single     ubi-info
+books       go-hello         html-helloworld    micro-java  nodejs-helloworld     php-scale       quip    s2i-scripts      todo-backend    trigger-builds  ubi-sleep
+build-app   hello-java       java-serverhost    movies      php-hello-dockerfile  post-commit     quotes  simple-pipeline  todo-frontend   ubi-echo
+[student@workstation DO288-apps]$ cd ubi-echo
+[student@workstation ubi-echo]$ git commit -a -m 'Add a counter'
+# On branch docker-build
+nothing to commit, working directory clean
+[student@workstation ubi-echo]$ git push
+Everything up-to-date
+[student@workstation ubi-echo]$ cd ~
+[student@workstation ~]$ oc start-build echo
+build.build.openshift.io/echo-2 started
+[student@workstation ~]$ oc logs -f bc/echo
+Cloning "https://github.com/carol101/DO288-apps" ...
+	Commit:	20d773370efdfce3221f56348ba2c544558a58a3 (fix: Add a missing license file for the repository (#48))
+	Author:	Marek Czernek <mczernek@redhat.com>
+	Date:	Tue Jul 28 16:04:10 2020 +0200
+Replaced Dockerfile FROM image registry.access.redhat.com/ubi8/ubi:8.0
+Caching blobs under "/var/cache/blobs".
+
+Pulling image registry.access.redhat.com/ubi8/ubi@sha256:8275e2ad7f458e329bdc8c0e7543cff1729998fe515a281d49638246de8e39ee ...
+Getting image source signatures
+Copying blob sha256:641d7cc5cbc48a13c68806cf25d5bcf76ea2157c3181e1db4f5d0edae34954ac
+Copying blob sha256:c65691897a4d140d441e2024ce086de996b1c4620832b90c973db81329577274
+Copying config sha256:11f9dba4d1bc7bbead64adb8fd73ea92dca5fac88a9b5c2c9796abcf2e97846d
+Writing manifest to image destination
+Storing signatures
+STEP 1: FROM registry.access.redhat.com/ubi8/ubi@sha256:8275e2ad7f458e329bdc8c0e7543cff1729998fe515a281d49638246de8e39ee
+STEP 2: USER 1001
+f2e59679d889bb80828252d1d16b76a5f2d463858da5cb5d3152c76782ed73c0
+STEP 3: CMD bash -c "while true; do echo test; sleep 5; done"
+e807d2e29945d2c052042abfee3e41636a9b3cb7838e0e026f9243967d7588f9
+STEP 4: ENV "OPENSHIFT_BUILD_NAME"="echo-2" "OPENSHIFT_BUILD_NAMESPACE"="carol-liang-docker-build" "OPENSHIFT_BUILD_SOURCE"="https://github.com/carol101/DO288-apps" "OPENSHIFT_BUILD_REFERENCE"="docker-build" "OPENSHIFT_BUILD_COMMIT"="20d773370efdfce3221f56348ba2c544558a58a3"
+a10b3e3d6923df49eadae1935dd996811f0b6ec0e0710700cf2ca5be72093b7c
+STEP 5: LABEL "io.openshift.build.commit.author"="Marek Czernek \u003cmczernek@redhat.com\u003e" "io.openshift.build.commit.date"="Tue Jul 28 16:04:10 2020 +0200" "io.openshift.build.commit.id"="20d773370efdfce3221f56348ba2c544558a58a3" "io.openshift.build.commit.message"="fix: Add a missing license file for the repository (#48)" "io.openshift.build.commit.ref"="docker-build" "io.openshift.build.name"="echo-2" "io.openshift.build.namespace"="carol-liang-docker-build" "io.openshift.build.source-context-dir"="ubi-echo" "io.openshift.build.source-location"="https://github.com/carol101/DO288-apps"
+STEP 6: COMMIT temp.builder.openshift.io/carol-liang-docker-build/echo-2:5ec60622
+1ce33982eebcb41182cc547f419e8c209e194da4f82f5aebb7d8c5c23d2757d3
+
+Pushing image image-registry.openshift-image-registry.svc:5000/carol-liang-docker-build/echo:latest ...
+Getting image source signatures
+Copying blob sha256:c65691897a4d140d441e2024ce086de996b1c4620832b90c973db81329577274
+Copying blob sha256:641d7cc5cbc48a13c68806cf25d5bcf76ea2157c3181e1db4f5d0edae34954ac
+Copying config sha256:1ce33982eebcb41182cc547f419e8c209e194da4f82f5aebb7d8c5c23d2757d3
+Writing manifest to image destination
+Storing signatures
+Successfully pushed image-registry.openshift-image-registry.svc:5000/carol-liang-docker-build/echo@sha256:606cd371a8397d1ea642c912dbd76febe1dd95c95463e29b7182d5e8f61f570a
+Push successful
+[student@workstation ~]$ oc status
+In project carol-liang-docker-build on server https://api.ocp-na2.prod.nextcle.com:6443
+
+dc/echo deploys istag/echo:latest <-
+  bc/echo docker builds https://github.com/carol101/DO288-apps#docker-build on istag/ubi:8.0 
+  deployment #2 running for 19 seconds - 0/1 pods
+  deployment #1 deployed 6 minutes ago - 1 pod
+
+
+4 infos identified, use 'oc status --suggest' to see details.
+[student@workstation ~]$ oc get pod
+NAME            READY   STATUS              RESTARTS   AGE
+echo-1-4m9h8    1/1     Running             0          6m17s
+echo-1-build    0/1     Completed           0          7m14s
+echo-1-deploy   0/1     Completed           0          6m25s
+echo-2-build    0/1     Completed           0          74s
+echo-2-deploy   1/1     Running             0          26s
+echo-2-wq6tt    0/1     ContainerCreating   0          11s
+[student@workstation ~]$ oc get pod
+NAME            READY   STATUS        RESTARTS   AGE
+echo-1-4m9h8    1/1     Terminating   0          6m34s
+echo-1-build    0/1     Completed     0          7m31s
+echo-1-deploy   0/1     Completed     0          6m42s
+echo-2-build    0/1     Completed     0          91s
+echo-2-deploy   0/1     Completed     0          43s
+echo-2-wq6tt    1/1     Running       0          28s
+[student@workstation ~]$ oc logs echo-2-wq6tt | head -n 3
+test
+test
+test
+[student@workstation ~]$ oc describe is echo
+Name:			echo
+Namespace:		carol-liang-docker-build
+Created:		8 minutes ago
+Labels:			app=echo
+Annotations:		openshift.io/generated-by=OpenShiftNewApp
+Image Repository:	default-route-openshift-image-registry.apps.ocp-na2.prod.nextcle.com/carol-liang-docker-build/echo
+Image Lookup:		local=false
+Unique Images:		2
+Tags:			1
+
+latest
+  no spec tag
+
+  * image-registry.openshift-image-registry.svc:5000/carol-liang-docker-build/echo@sha256:606cd371a8397d1ea642c912dbd76febe1dd95c95463e29b7182d5e8f61f570a
+      About a minute ago
+    image-registry.openshift-image-registry.svc:5000/carol-liang-docker-build/echo@sha256:5781ab0bd7d33446ccc5e0e2b171f1c1808f30e17865e1e4469529d56b24edb1
+      7 minutes ago
+[student@workstation ~]$ oc delete all -l app=echo
+pod "echo-2-wq6tt" deleted
+replicationcontroller "echo-1" deleted
+replicationcontroller "echo-2" deleted
+deploymentconfig.apps.openshift.io "echo" deleted
+buildconfig.build.openshift.io "echo" deleted
+build.build.openshift.io "echo-1" deleted
+build.build.openshift.io "echo-2" deleted
+imagestream.image.openshift.io "echo" deleted
+imagestream.image.openshift.io "ubi" deleted
+[student@workstation ~]$ oc get all
+No resources found.
+[student@workstation ~]$ lab docker-build finish
+
+Completing GE: Deploying an Application to an OpenShift Cluster
+
+ · Log in on OpenShift.........................................  SUCCESS
+ · Remove exercise files.......................................  SUCCESS
+ · Remove solution files.......................................  SUCCESS
+ · Delete OpenShift project 'carol-liang-docker-build'.........  SUCCESS
+ · Wait for project 'carol-liang-docker-build' to be gone......  SUCCESS
+ · Git repo '/home/student/DO288-apps' has no pending changes..  SUCCESS
+
+Please use start if you wish to do the exercise again.
+
+
