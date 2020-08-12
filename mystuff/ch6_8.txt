@@ -1,0 +1,1555 @@
+[student@workstation ~]$ source /usr/local/etc/ocp4.config
+[student@workstation ~]$ oc login -u ${RHT_OCP4_DEV_USER} -p ${RHT_OCP4_DEV_PASSWORD} ${RHT_OCP4_MASTER_API}
+Login successful.
+
+You don't have any projects. You can try to create a new project, by running
+
+    oc new-project <projectname>
+
+[student@workstation ~]$ oc get templates -n openshift | grep php | grep mysql
+cakephp-mysql-example                           An example CakePHP application with a MySQL database. For more information ab...   19 (4 blank)      8
+cakephp-mysql-persistent                        An example CakePHP application with a MySQL database. For more information ab...   20 (4 blank)      9
+[student@workstation ~]$ oc new-project ${RHT_OCP4_DEV_USER}-common
+Now using project "carol-liang-common" on server "https://api.ocp-na2.prod.nextcle.com:6443".
+
+You can add applications to this project with the 'new-app' command. For example, try:
+
+    oc new-app django-psql-example
+
+to build a new example application in Python. Or use kubectl to deploy a simple Kubernetes application:
+
+    kubectl create deployment hello-node --image=gcr.io/hello-minikube-zero-install/hello-node
+
+[student@workstation ~]$ oc create -f ~/DO288/labs/build-template/php-mysql-ephemeral.json
+template.template.openshift.io/php-mysql-ephemeral created
+[student@workstation ~]$ oc new-project ${RHT_OCP4_DEV_USER}-build-template
+Now using project "carol-liang-build-template" on server "https://api.ocp-na2.prod.nextcle.com:6443".
+
+You can add applications to this project with the 'new-app' command. For example, try:
+
+    oc new-app django-psql-example
+
+to build a new example application in Python. Or use kubectl to deploy a simple Kubernetes application:
+
+    kubectl create deployment hello-node --image=gcr.io/hello-minikube-zero-install/hello-node
+
+[student@workstation ~]$ oc describe template php-mysql-ephemeral -n ${RHT_OCP4_DEV_USER}-common
+Name:		php-mysql-ephemeral
+Namespace:	carol-liang-common
+Created:	About a minute ago
+Labels:		<none>
+Description:	A  PHP application with a MySQL database.
+		WARNING: Any data stored will be lost upon pod destruction. Only use this template for testing.
+Annotations:	iconClass=icon-php
+		openshift.io/display-name=PHP + MySQL (Ephemeral)
+		tags=php
+		template.openshift.io/long-description=This template defines resources needed to develop a PHP application, including a build configuration, application deployment configuration, and database deployment configuration.  The database is stored in non-persistent storage, so this configuration should be used for experimental purposes only.
+		template.openshift.io/provider-display-name=Red Hat Training
+
+Parameters:		 
+    Name:		NAME
+    Display Name:	Name
+    Description:	The name assigned to all of the app objects defined in this template.
+    Required:		true
+    Value:		php-app
+
+    Name:		NAMESPACE
+    Display Name:	Namespace
+    Description:	The OpenShift Namespace where the S2I biulder ImageStream resides.
+    Required:		true
+    Value:		openshift
+
+    Name:		SOURCE_REPOSITORY_URL
+    Display Name:	Git Repository URL
+    Description:	The URL of the repository with your application source code.
+    Required:		true
+    Value:		<none>
+
+    Name:		SOURCE_REPOSITORY_REF
+    Display Name:	Git Reference
+    Description:	Set this to a branch name, tag or other ref of your repository if you are not using the default branch.
+    Required:		false
+    Value:		<none>
+
+    Name:		CONTEXT_DIR
+    Display Name:	Context Directory
+    Description:	Set this to the relative path to your project if it is not in the root of your repository.
+    Required:		false
+    Value:		<none>
+
+    Name:		APPLICATION_DOMAIN
+    Display Name:	Application Hostname
+    Description:	The exposed hostname that will route to the PHP app service, if left blank a value will be defaulted.
+    Required:		false
+    Value:		<none>
+
+    Name:		GITHUB_WEBHOOK_SECRET
+    Display Name:	GitHub Webhook Secret
+    Description:	Github trigger secret.  A difficult to guess string encoded as part of the webhook URL.  Not encrypted.
+    Required:		false
+    Generated:		expression
+    From:		[a-zA-Z0-9]{40}
+
+    Name:		DATABASE_SERVICE_NAME
+    Display Name:	Database Service Name
+    Required:		true
+    Value:		mysql
+
+    Name:		DATABASE_NAME
+    Display Name:	Database Name
+    Required:		true
+    Value:		phpapp
+
+    Name:		DATABASE_USER
+    Display Name:	Database User
+    Required:		true
+    Value:		php
+
+    Name:		DATABASE_PASSWORD
+    Display Name:	Database Password
+    Required:		false
+    Generated:		expression
+    From:		[a-zA-Z0-9]{16}
+
+
+Object Labels:	template=php-mysql-ephemeral
+
+Message:	The following service(s) have been created in your project: ${NAME}, ${DATABASE_SERVICE_NAME}.
+		
+
+Objects:		 
+    Secret		${NAME}
+    Service		${NAME}
+    Route		${NAME}
+    ImageStream		${NAME}
+    BuildConfig		${NAME}
+    DeploymentConfig	${NAME}
+    Service		${DATABASE_SERVICE_NAME}
+    DeploymentConfig	${DATABASE_SERVICE_NAME}
+[student@workstation ~]$ cat ~/DO288/labs/build-template/create-app.sh
+#!/bin/sh
+
+source /usr/local/etc/ocp4.config
+
+oc new-app --template ${RHT_OCP4_DEV_USER}-common/php-mysql-ephemeral \
+  -p NAME=quotesapi \
+  -p APPLICATION_DOMAIN=quote-${RHT_OCP4_DEV_USER}.${RHT_OCP4_WILDCARD_DOMAIN} \
+  -p SOURCE_REPOSITORY_URL=https://github.com/${RHT_OCP4_GITHUB_USER}/DO288-apps \
+  -p CONTEXT_DIR=quotes \
+  -p DATABASE_SERVICE_NAME=quotesdb \
+  -p DATABASE_USER=user1 \
+  -p DATABASE_PASSWORD=mypa55 \
+  --name quotes
+
+[student@workstation ~]$  ~/DO288/labs/build-template/create-app.sh
+--> Deploying template "carol-liang-common/php-mysql-ephemeral" for "carol-liang-common/php-mysql-ephemeral" to project carol-liang-build-template
+
+     PHP + MySQL (Ephemeral)
+     ---------
+     A  PHP application with a MySQL database.
+     WARNING: Any data stored will be lost upon pod destruction. Only use this template for testing.
+
+     The following service(s) have been created in your project: quotesapi, quotesdb.
+
+     * With parameters:
+        * Name=quotesapi
+        * Namespace=openshift
+        * Git Repository URL=https://github.com/carol101/DO288-apps
+        * Git Reference=
+        * Context Directory=quotes
+        * Application Hostname=quote-carol-liang.apps.ocp-na2.prod.nextcle.com
+        * GitHub Webhook Secret=283PBEXCquv1Fv7gWYh44pIaPj2lnKEaRPoGGLUE # generated
+        * Database Service Name=quotesdb
+        * Database Name=phpapp
+        * Database User=user1
+        * Database Password=mypa55
+
+--> Creating resources ...
+    secret "quotesapi" created
+    service "quotesapi" created
+    route.route.openshift.io "quotesapi" created
+    imagestream.image.openshift.io "quotesapi" created
+    buildconfig.build.openshift.io "quotesapi" created
+    deploymentconfig.apps.openshift.io "quotesapi" created
+    service "quotesdb" created
+    deploymentconfig.apps.openshift.io "quotesdb" created
+--> Success
+    Access your application via route 'quote-carol-liang.apps.ocp-na2.prod.nextcle.com' 
+    Build scheduled, use 'oc logs -f bc/quotesapi' to track its progress.
+    Run 'oc status' to view your app.
+[student@workstation ~]$ oc logs -f bc/quotesapi
+Cloning "https://github.com/carol101/DO288-apps" ...
+	Commit:	20d773370efdfce3221f56348ba2c544558a58a3 (fix: Add a missing license file for the repository (#48))
+	Author:	Marek Czernek <mczernek@redhat.com>
+	Date:	Tue Jul 28 16:04:10 2020 +0200
+Caching blobs under "/var/cache/blobs".
+Getting image source signatures
+Copying blob sha256:84e620d0abe585d05a7bed55144af0bc5efe083aed05eac1e88922034ddf1ed2
+Copying blob sha256:01ace4f1c1164bbc4513b616c5cff62585fde1dc198b7469c5bc5bc5355941da
+Copying blob sha256:1d12b9a95cbaf32ab3bcb4a98f70e9e149e72000e86abc04c22ac495c8a70a15
+Copying blob sha256:bb13d92caffa705f32b8a7f9f661e07ddede310c6ccfa78fb53a49539740e29b
+Copying blob sha256:455ea8ab06218495bbbcb14b750a0d644897b24f8c5dcf9e8698e27882583412
+Copying config sha256:e0d2bc51569c2e3832781d6d8038cdb9af4322c0018f0072d76a402b8373a37f
+Writing manifest to image destination
+Storing signatures
+Generating dockerfile with builder image image-registry.openshift-image-registry.svc:5000/openshift/php@sha256:a5aaaae5baf98cb674ac2352429e0450591b45d3674e44c516612a9ee67282d5
+STEP 1: FROM image-registry.openshift-image-registry.svc:5000/openshift/php@sha256:a5aaaae5baf98cb674ac2352429e0450591b45d3674e44c516612a9ee67282d5
+STEP 2: LABEL "io.openshift.build.commit.date"="Tue Jul 28 16:04:10 2020 +0200" "io.openshift.build.commit.id"="20d773370efdfce3221f56348ba2c544558a58a3" "io.openshift.build.commit.ref"="master" "io.openshift.build.commit.message"="fix: Add a missing license file for the repository (#48)" "io.openshift.build.source-location"="https://github.com/carol101/DO288-apps" "io.openshift.build.source-context-dir"="quotes" "io.openshift.build.image"="image-registry.openshift-image-registry.svc:5000/openshift/php@sha256:a5aaaae5baf98cb674ac2352429e0450591b45d3674e44c516612a9ee67282d5" "io.openshift.build.commit.author"="Marek Czernek <mczernek@redhat.com>"
+STEP 3: ENV OPENSHIFT_BUILD_NAME="quotesapi-1" OPENSHIFT_BUILD_NAMESPACE="carol-liang-build-template" OPENSHIFT_BUILD_SOURCE="https://github.com/carol101/DO288-apps" OPENSHIFT_BUILD_COMMIT="20d773370efdfce3221f56348ba2c544558a58a3"
+STEP 4: USER root
+STEP 5: COPY upload/src /tmp/src
+STEP 6: RUN chown -R 1001:0 /tmp/src
+time="2020-08-12T17:26:00Z" level=warning msg="pkg/chroot: error unmounting \"/tmp/buildah856383857/mnt/rootfs\": error checking if \"/tmp/buildah856383857/mnt/rootfs/sys/fs/cgroup/hugetlb\" is mounted: no such file or directory"
+time="2020-08-12T17:26:00Z" level=warning msg="pkg/bind: error unmounting \"/tmp/buildah856383857/mnt/rootfs\": error checking if \"/tmp/buildah856383857/mnt/rootfs/sys/fs/cgroup/hugetlb\" is mounted: no such file or directory"
+STEP 7: USER 1001
+STEP 8: RUN /usr/libexec/s2i/assemble
+---> Installing application source...
+=> sourcing 20-copy-config.sh ...
+---> 17:26:01     Processing additional arbitrary httpd configuration provided by s2i ...
+=> sourcing 00-documentroot.conf ...
+=> sourcing 50-mpm-tuning.conf ...
+=> sourcing 40-ssl-certs.sh ...
+time="2020-08-12T17:26:02Z" level=warning msg="pkg/chroot: error unmounting \"/tmp/buildah583144130/mnt/rootfs\": error checking if \"/tmp/buildah583144130/mnt/rootfs/sys/fs/cgroup/hugetlb\" is mounted: no such file or directory"
+time="2020-08-12T17:26:02Z" level=warning msg="pkg/bind: error unmounting \"/tmp/buildah583144130/mnt/rootfs\": error checking if \"/tmp/buildah583144130/mnt/rootfs/sys/fs/cgroup/hugetlb\" is mounted: no such file or directory"
+STEP 9: CMD /usr/libexec/s2i/run
+STEP 10: COMMIT temp.builder.openshift.io/carol-liang-build-template/quotesapi-1:3fdabc36
+Getting image source signatures
+Copying blob sha256:35817540a17b5b90cb4426078d53813b16e70c75e1cce3db116d2fbbca7fbf10
+Copying blob sha256:c7fbe90ae90e9c6452e5d809f069907907e6f32532565104921f600fb956306c
+Copying blob sha256:74d760a83a4b8bcb3d01e7726e06c11469f0bb2ce4645474cb91a607c27bf482
+Copying blob sha256:f1cc3f0b20053e48dc0f6505734d2f476e4fcd975df9791164bd749af9332401
+Copying blob sha256:c19ff85c66e8be48cab01b2574aa562291be030145d9debce919e008bb2b3c59
+Copying blob sha256:17b43f85e57ba0645f4e32d5145f687564aad409a02b646929f229ad7d01d6ee
+Copying config sha256:b70aa7c090a67b5a844af31719d290765f18ea56fad3c70b6e0cc5ae0498ed59
+Writing manifest to image destination
+Storing signatures
+b70aa7c090a67b5a844af31719d290765f18ea56fad3c70b6e0cc5ae0498ed59
+
+Pushing image image-registry.openshift-image-registry.svc:5000/carol-liang-build-template/quotesapi:latest ...
+Getting image source signatures
+Copying blob sha256:17b43f85e57ba0645f4e32d5145f687564aad409a02b646929f229ad7d01d6ee
+Copying blob sha256:bb13d92caffa705f32b8a7f9f661e07ddede310c6ccfa78fb53a49539740e29b
+Copying blob sha256:1d12b9a95cbaf32ab3bcb4a98f70e9e149e72000e86abc04c22ac495c8a70a15
+Copying blob sha256:84e620d0abe585d05a7bed55144af0bc5efe083aed05eac1e88922034ddf1ed2
+Copying blob sha256:455ea8ab06218495bbbcb14b750a0d644897b24f8c5dcf9e8698e27882583412
+Copying blob sha256:01ace4f1c1164bbc4513b616c5cff62585fde1dc198b7469c5bc5bc5355941da
+Copying config sha256:b70aa7c090a67b5a844af31719d290765f18ea56fad3c70b6e0cc5ae0498ed59
+Writing manifest to image destination
+Storing signatures
+Successfully pushed image-registry.openshift-image-registry.svc:5000/carol-liang-build-template/quotesapi@sha256:9905ff75f0b0512cca4f69d61c948b76f29b9849f80740087797aeb6e95e3c6b
+Push successful
+[student@workstation ~]$ oc get route
+NAME        HOST/PORT                                         PATH   SERVICES    PORT    TERMINATION   WILDCARD
+quotesapi   quote-carol-liang.apps.ocp-na2.prod.nextcle.com          quotesapi   <all>                 None
+[student@workstation ~]$ oc get pod
+NAME                 READY   STATUS              RESTARTS   AGE
+quotesapi-1-6xsv9    0/1     ContainerCreating   0          9s
+quotesapi-1-build    0/1     Completed           0          107s
+quotesapi-1-deploy   1/1     Running             0          18s
+quotesdb-1-9kn96     1/1     Running             0          97s
+quotesdb-1-deploy    0/1     Completed           0          106s
+[student@workstation ~]$ oc get pod
+NAME                 READY   STATUS      RESTARTS   AGE
+quotesapi-1-6xsv9    1/1     Running     0          22s
+quotesapi-1-build    0/1     Completed   0          2m
+quotesapi-1-deploy   0/1     Completed   0          31s
+quotesdb-1-9kn96     1/1     Running     0          110s
+quotesdb-1-deploy    0/1     Completed   0          119s
+[student@workstation ~]$ curl -si http://quote-$RHT_OCP4_DEV_USER.$RHT_OCP4_WILDCARD_DOMAIN/get.php
+HTTP/1.1 500 Internal Server Error
+Date: Wed, 12 Aug 2020 17:27:30 GMT
+Server: Apache/2.4.34 (Red Hat) OpenSSL/1.0.2k-fips
+Content-Length: 0
+Content-Type: text/html; charset=UTF-8
+Set-Cookie: a313c588c650285fcc33842b65ce27dc=8f79126f785ee61f65bc744417005a00; path=/; HttpOnly
+
+[student@workstation ~]$ oc describe svc quotesdb | grep Endpoints
+Endpoints:         10.130.6.151:3306
+[student@workstation ~]$ oc get pod
+NAME                 READY   STATUS      RESTARTS   AGE
+quotesapi-1-6xsv9    1/1     Running     0          2m56s
+quotesapi-1-build    0/1     Completed   0          4m34s
+quotesapi-1-deploy   0/1     Completed   0          3m5s
+quotesdb-1-9kn96     1/1     Running     0          4m24s
+quotesdb-1-deploy    0/1     Completed   0          4m33s
+[student@workstation ~]$ oc describe pod quotesdb-1-9kn96 | grep IP
+IP:                 10.130.6.151
+[student@workstation ~]$ oc describe pod quotesdb-1-gkn96 | grep -A 4 Environment
+Error from server (NotFound): pods "quotesdb-1-gkn96" not found
+[student@workstation ~]$ oc describe pod quotesdb-1-9kn96 | grep -A 4 Environment
+    Environment:
+      MYSQL_USER:      <set to the key 'database-user' in secret 'quotesapi'>      Optional: false
+      MYSQL_PASSWORD:  <set to the key 'database-password' in secret 'quotesapi'>  Optional: false
+      MYSQL_DATABASE:  phpapp
+    Mounts:
+[student@workstation ~]$ oc describe pod quotesapi-1-6xsv9 | grep -A 5 Environment
+    Environment:
+      DATABASE_SERVICE_NAME:  quotesdb
+      DATABASE_NAME:          phpapp
+      DATABASE_USER:          <set to the key 'database-user' in secret 'quotesapi'>      Optional: false
+      DATABASE_PASSWORD:      <set to the key 'database-password' in secret 'quotesapi'>  Optional: false
+    Mounts:
+[student@workstation ~]$ oc rsh quotesapi-1-6xsv9 bash -c 'echo > /dev/tcp/$DATABASE_SERVICE_NAME/3306 && echo OK || echo FAIL'
+OK
+[student@workstation ~]$ oc logs quotesapi-1-6xsv9
+-> Cgroups memory limit is set, using HTTPD_MAX_REQUEST_WORKERS=136
+=> sourcing 20-copy-config.sh ...
+---> 17:26:30     Processing additional arbitrary httpd configuration provided by s2i ...
+=> sourcing 00-documentroot.conf ...
+=> sourcing 50-mpm-tuning.conf ...
+=> sourcing 40-ssl-certs.sh ...
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.129.2.150. Set the 'ServerName' directive globally to suppress this message
+[Wed Aug 12 17:26:30.133053 2020] [ssl:warn] [pid 1] AH01909: 10.129.2.150:8443:0 server certificate does NOT include an ID which matches the server name
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.129.2.150. Set the 'ServerName' directive globally to suppress this message
+[Wed Aug 12 17:26:30.212951 2020] [ssl:warn] [pid 1] AH01909: 10.129.2.150:8443:0 server certificate does NOT include an ID which matches the server name
+[Wed Aug 12 17:26:30.213182 2020] [http2:warn] [pid 1] AH10034: The mpm module (prefork.c) is not supported by mod_http2. The mpm determines how things are processed in your server. HTTP/2 has more demands in this regard and the currently selected mpm will just not do. This is an advisory warning. Your server will continue to work, but the HTTP/2 protocol will be inactive.
+[Wed Aug 12 17:26:30.214292 2020] [lbmethod_heartbeat:notice] [pid 1] AH02282: No slotmem from mod_heartmonitor
+[Wed Aug 12 17:26:30.259290 2020] [mpm_prefork:notice] [pid 1] AH00163: Apache/2.4.34 (Red Hat) OpenSSL/1.0.2k-fips configured -- resuming normal operations
+[Wed Aug 12 17:26:30.259325 2020] [core:notice] [pid 1] AH00094: Command line: 'httpd -D FOREGROUND'
+[Wed Aug 12 17:27:35.468643 2020] [php7:notice] [pid 43] [client 10.129.3.191:58674] SQL error: Table 'phpapp.quote' doesn't exist\n
+10.129.3.191 - - [12/Aug/2020:17:27:30 +0000] "GET /get.php HTTP/1.1" 500 - "-" "curl/7.29.0"
+[student@workstation ~]$ oc cp ~/DO288/labs/build-template/quote.sql quotesdb-1-9kn96:/tmp/quote.sql
+[student@workstation ~]$ oc rsh -t quotesdb-1-9kn96
+sh-4.2$ mysql -u$MYSQL_USER -p$MYSQL_PASSWORD $MYSQL_DATABASE < /tmp/quote.sql
+mysql: [Warning] Using a password on the command line interface can be insecure.
+sh-4.2$ more /tmp/quote.sql 
+
+create table quote (id integer primary key, msg varchar(250));
+
+insert into quote values (1, 'Always remember that you are absolutely unique. Just like everyone else.');
+
+insert into quote values (2, 'Do not take life too seriously. You will never get out of it alive.');
+
+insert into quote values (3, 'People who think they know everything are a great annoyance to those of us who do.');
+
+
+sh-4.2$ exit
+exit
+[student@workstation ~]$ curl -si http://quote-$RHT_OCP4_DEV_USER.$RHT_OCP4_WILDCARD_DOMAIN/get.php
+HTTP/1.1 200 OK
+Date: Wed, 12 Aug 2020 17:38:59 GMT
+Server: Apache/2.4.34 (Red Hat) OpenSSL/1.0.2k-fips
+Content-Length: 83
+Content-Type: text/html; charset=UTF-8
+Set-Cookie: a313c588c650285fcc33842b65ce27dc=8f79126f785ee61f65bc744417005a00; path=/; HttpOnly
+Cache-control: private
+
+People who think they know everything are a great annoyance to those of us who do.
+[student@workstation ~]$ oc delete project ${RHT_OCP4_DEV_USER}-build-template
+project.project.openshift.io "carol-liang-build-template" deleted
+[student@workstation ~]$ oc delete project ${RHT_OCP4_DEV_USER}-common
+project.project.openshift.io "carol-liang-common" deleted
+[student@workstation ~]$ lab build-template finish
+
+Completing GE: Managing an Application with the CLI
+
+ · Remove exercise files.......................................  SUCCESS
+ · Log in on OpenShift.........................................  SUCCESS
+
+Please use start if you wish to do the exercise again.
+
+[student@workstation ~]$ vim ~/DO288/labs/build-template/php-mysqlephemeral.json
+[student@workstation ~]$ ls
+-a       DO180       DO288       Documents  info.txt  Pictures  {{range .Mounts}}{{println .Destination}}{{end}}  Videos
+Desktop  DO180-apps  DO288-apps  Downloads  Music     Public    Templates
+[student@workstation ~]$ cd DO288
+[student@workstation DO288]$ ls
+labs  solutions
+[student@workstation DO288]$ cd labs
+[student@workstation labs]$ ls
+[student@workstation labs]$ ll
+total 0
+[student@workstation labs]$ cd ..
+[student@workstation DO288]$ cd ..
+[student@workstation ~]$ cd D0180
+bash: cd: D0180: No such file or directory
+[student@workstation ~]$ ll
+total 8
+-rw-rw-r--.  1 student student    0 Aug 11 13:54 -a
+drwxr-xr-x.  2 student student    6 Aug 10 13:41 Desktop
+drwxr-xr-x.  4 root    root      35 Aug 10 18:33 DO180
+drwxrwxr-x. 10 student student  158 Aug 11 21:43 DO180-apps
+drwxr-xr-x.  4 student student   35 Aug 11 20:33 DO288
+drwxrwxr-x. 33 student student 4096 Aug 10 17:30 DO288-apps
+drwxr-xr-x.  2 student student    6 Aug 10 13:41 Documents
+drwxr-xr-x.  2 student student   41 Aug 10 20:54 Downloads
+-rw-rw-r--.  1 student student  237 Aug 10 17:39 info.txt
+drwxr-xr-x.  2 student student    6 Aug 10 13:41 Music
+drwxr-xr-x.  2 student student    6 Aug 10 13:41 Pictures
+drwxr-xr-x.  2 student student    6 Aug 10 13:41 Public
+-rw-rw-r--.  1 student student    0 Aug 11 13:51 {{range .Mounts}}{{println .Destination}}{{end}}
+drwxr-xr-x.  2 student student    6 Aug 10 13:41 Templates
+drwxr-xr-x.  2 student student    6 Aug 10 13:41 Videos
+[student@workstation ~]$ cd D0180
+bash: cd: D0180: No such file or directory
+[student@workstation ~]$ cd DO288
+[student@workstation DO288]$ lab troubleshoot-s2i start
+
+Checking prerequisites for Guided Exercise: Troubleshooting an OpenShift Build
+
+ Checking local clone of the applications repository:
+ · Folder '/home/student/DO180-apps' is a git repo.............  SUCCESS
+ · Git repo '/home/student/DO180-apps' has no pending changes..  SUCCESS
+ · Project 'nodejs-helloworld' exists in student's GitHub fork.  SUCCESS
+ Checking for conflicts with existing OpenShift projects:
+ · Project 'carol-liang-nodejs' is absent......................  SUCCESS
+ Checking for conflicts with existing local containers:
+ · Container 'test' is absent..................................  SUCCESS
+ Verifying the OpenShift cluster is running:
+ · Log in on OpenShift.........................................  SUCCESS
+ · Check master node ip-10-0-139-73.ec2.internal is ready......  SUCCESS
+ · Check master node ip-10-0-151-29.ec2.internal is ready......  SUCCESS
+ · Check master node ip-10-0-163-6.ec2.internal is ready.......  SUCCESS
+ · Check the internal registry is up and running...............  SUCCESS
+
+Setting up the classroom for Guided Exercise: Troubleshooting an OpenShift Build
+
+ · Downloading starter project.................................  SUCCESS
+ · Downloading solution project................................  SUCCESS
+
+Setup successful. Please proceed with the exercise.
+
+
+Overall start status...........................................  SUCCESS
+
+[student@workstation DO288]$ source /usr/local/etc/ocp4.config
+[student@workstation DO288]$ cd ~/DO180-apps
+[student@workstation DO180-apps]$ git checkout master
+Switched to branch 'master'
+Your branch is ahead of 'origin/master' by 1 commit.
+  (use "git push" to publish your local commits)
+[student@workstation DO180-apps]$ git push
+Total 0 (delta 0), reused 0 (delta 0)
+To https://github.com/carol101/DO180-apps.git
+   f7cd896..e9f0031  master -> master
+[student@workstation DO180-apps]$ ls
+example  mystuff  nodejs-app  nodejs-helloworld  php-helloworld  README.md  temps  todoapp
+[student@workstation DO180-apps]$ git checkout -b troubleshoot-s2i
+Switched to a new branch 'troubleshoot-s2i'
+[student@workstation DO180-apps]$ git push -u origin troubleshoot-s2i
+Total 0 (delta 0), reused 0 (delta 0)
+remote: 
+remote: Create a pull request for 'troubleshoot-s2i' on GitHub by visiting:
+remote:      https://github.com/carol101/DO180-apps/pull/new/troubleshoot-s2i
+remote: 
+To https://github.com/carol101/DO180-apps.git
+ * [new branch]      troubleshoot-s2i -> troubleshoot-s2i
+Branch troubleshoot-s2i set up to track remote branch troubleshoot-s2i from origin.
+[student@workstation DO180-apps]$ oc login -u "${RHT_OCP4_DEV_USER}" -p "${RHT_OCP4_DEV_PASSWORD}
+> q
+> ^C
+[student@workstation DO180-apps]$ oc login -u "${RHT_OCP4_DEV_USER}" -p "${RHT_OCP4_DEV_PASSWORD}"
+Login successful.
+
+You don't have any projects. You can try to create a new project, by running
+
+    oc new-project <projectname>
+
+[student@workstation DO180-apps]$ oc new-project ${RHT_OCP4_DEV_USER}-nodejs
+Now using project "carol-liang-nodejs" on server "https://api.ocp-na2.prod.nextcle.com:6443".
+
+You can add applications to this project with the 'new-app' command. For example, try:
+
+    oc new-app django-psql-example
+
+to build a new example application in Python. Or use kubectl to deploy a simple Kubernetes application:
+
+    kubectl create deployment hello-node --image=gcr.io/hello-minikube-zero-install/hello-node
+
+[student@workstation DO180-apps]$ oc new-app --context-dir=nodejs-helloworld https://github.com/${RHT_OCP4_GITHUB_USER}/DO180-apps#troubleshoot-s2i -i nodejs:8 --name nodejs-hello --build-env npm_config_registry=http://${RHT_OCP4_NEXUS_SERVER}/repository/npm-proxy
+--> Found image 65d8e33 (8 months old) in image stream "openshift/nodejs" under tag "8" for "nodejs:8"
+
+    Node.js 8 
+    --------- 
+    Node.js 8 available as container is a base platform for building and running various Node.js 8 applications and frameworks. Node.js is a platform built on Chrome's JavaScript runtime for easily building fast, scalable network applications. Node.js uses an event-driven, non-blocking I/O model that makes it lightweight and efficient, perfect for data-intensive real-time applications that run across distributed devices.
+
+    Tags: builder, nodejs, nodejs8
+
+    * The source repository appears to match: nodejs
+    * A source build using source code from https://github.com/carol101/DO180-apps#troubleshoot-s2i will be created
+      * The resulting image will be pushed to image stream tag "nodejs-hello:latest"
+      * Use 'oc start-build' to trigger a new build
+    * This image will be deployed in deployment config "nodejs-hello"
+    * Port 8080/tcp will be load balanced by service "nodejs-hello"
+      * Other containers can access this service through the hostname "nodejs-hello"
+
+--> Creating resources ...
+    imagestream.image.openshift.io "nodejs-hello" created
+    buildconfig.build.openshift.io "nodejs-hello" created
+    deploymentconfig.apps.openshift.io "nodejs-hello" created
+    service "nodejs-hello" created
+--> Success
+    Build scheduled, use 'oc logs -f bc/nodejs-hello' to track its progress.
+    Application is not exposed. You can expose services to the outside world by executing one or more of the commands below:
+     'oc expose svc/nodejs-hello' 
+    Run 'oc status' to view your app.
+[student@workstation DO180-apps]$ oc status
+In project carol-liang-nodejs on server https://api.ocp-na2.prod.nextcle.com:6443
+
+svc/nodejs-hello - 172.30.23.62:8080
+  dc/nodejs-hello deploys istag/nodejs-hello:latest <-
+    bc/nodejs-hello source builds https://github.com/carol101/DO180-apps#troubleshoot-s2i on openshift/nodejs:8 
+      build #1 failed 26 seconds ago - e9f0031: add new file of day2 (Student User <student@workstation.lab.example.com>)
+    deployment #1 waiting on image or update
+
+Errors:
+  * build/nodejs-hello-1 has failed.
+
+1 error, 1 warning, 2 infos identified, use 'oc status --suggest' to see details.
+[student@workstation DO180-apps]$ get pods -w
+bash: get: command not found...
+Similar command is: 'git'
+[student@workstation DO180-apps]$ oc get pods -w
+NAME                   READY   STATUS   RESTARTS   AGE
+nodejs-hello-1-build   0/1     Error    0          2m22s
+^C[student@workstation DO180-apps]$ 
+[student@workstation DO180-apps]$ oc logs bc/nodejs-hello
+Cloning "https://github.com/carol101/DO180-apps" ...
+	Commit:	e9f00318b5abec2221da512d6c8ca4ae62e21789 (add new file of day2)
+	Author:	Student User <student@workstation.lab.example.com>
+	Date:	Tue Aug 11 21:46:01 2020 +0000
+Caching blobs under "/var/cache/blobs".
+Getting image source signatures
+Copying blob sha256:f31f544bb80de4b38c70506516c91d18e7de1c6988143ebe000b49159e5b1f14
+Copying blob sha256:ad46648f2433aa416763060fb4baaefe64baeda603d4e572f883c21c5482fea1
+Copying blob sha256:9c9d2ac50b32c2bb48d07fb4e80e81552acc76ade952777f5deb05fdac8f88c6
+Copying blob sha256:d327c1598329494579ba3d62999df41f11bff9a2bfad57fb49b30324404ac42a
+Copying blob sha256:48ed3bfd822646e50676cd7606af43e984db141bb1755904362f1eb64684c68a
+Copying config sha256:65d8e33f8671dc979c8a6330082a9a3f8b79bb7bda223aade2bfdbbc584ec51c
+Writing manifest to image destination
+Storing signatures
+Generating dockerfile with builder image image-registry.openshift-image-registry.svc:5000/openshift/nodejs@sha256:bf4030ac45b8b3ff0ea2892261f1fb5df5b077a67ef717836ac0de879cc775d9
+STEP 1: FROM image-registry.openshift-image-registry.svc:5000/openshift/nodejs@sha256:bf4030ac45b8b3ff0ea2892261f1fb5df5b077a67ef717836ac0de879cc775d9
+STEP 2: LABEL "io.openshift.build.commit.date"="Tue Aug 11 21:46:01 2020 +0000" "io.openshift.build.commit.id"="e9f00318b5abec2221da512d6c8ca4ae62e21789" "io.openshift.build.commit.ref"="troubleshoot-s2i" "io.openshift.build.commit.message"="add new file of day2" "io.openshift.build.source-location"="https://github.com/carol101/DO180-apps" "io.openshift.build.source-context-dir"="nodejs-helloworld" "io.openshift.build.image"="image-registry.openshift-image-registry.svc:5000/openshift/nodejs@sha256:bf4030ac45b8b3ff0ea2892261f1fb5df5b077a67ef717836ac0de879cc775d9" "io.openshift.build.commit.author"="Student User <student@workstation.lab.example.com>"
+STEP 3: ENV OPENSHIFT_BUILD_NAME="nodejs-hello-1" OPENSHIFT_BUILD_NAMESPACE="carol-liang-nodejs" OPENSHIFT_BUILD_SOURCE="https://github.com/carol101/DO180-apps" OPENSHIFT_BUILD_REFERENCE="troubleshoot-s2i" OPENSHIFT_BUILD_COMMIT="e9f00318b5abec2221da512d6c8ca4ae62e21789" npm_config_registry="http://nexus-common.apps.ocp-na2.prod.nextcle.com/repository/npm-proxy"
+STEP 4: USER root
+STEP 5: COPY upload/src /tmp/src
+STEP 6: RUN chown -R 1001:0 /tmp/src
+time="2020-08-12T18:37:34Z" level=warning msg="pkg/chroot: error unmounting \"/tmp/buildah153253226/mnt/rootfs\": error checking if \"/tmp/buildah153253226/mnt/rootfs/sys/fs/cgroup/hugetlb\" is mounted: no such file or directory"
+time="2020-08-12T18:37:34Z" level=warning msg="pkg/bind: error unmounting \"/tmp/buildah153253226/mnt/rootfs\": error checking if \"/tmp/buildah153253226/mnt/rootfs/sys/fs/cgroup/hugetlb\" is mounted: no such file or directory"
+STEP 7: USER 1001
+STEP 8: RUN /usr/libexec/s2i/assemble
+---> Installing application source ...
+---> Installing all dependencies
+npm ERR! code ETARGET
+npm ERR! notarget No matching version found for express@~4.14.2
+npm ERR! notarget In most cases you or one of your dependencies are requesting
+npm ERR! notarget a package version that doesn't exist.
+npm ERR! notarget 
+npm ERR! notarget It was specified as a dependency of 'nodejs-helloworld'
+npm ERR! notarget 
+
+npm ERR! A complete log of this run can be found in:
+npm ERR!     /opt/app-root/src/.npm/_logs/2020-08-12T18_37_37_267Z-debug.log
+subprocess exited with status 1
+subprocess exited with status 1
+error: build error: error building at STEP "RUN /usr/libexec/s2i/assemble": exit status 1
+[student@workstation DO180-apps]$ vim ~/DO180-apps/nodejs-helloworld/package.json
+[student@workstation DO180-apps]$ git commit -am "Fixed Express release"
+[troubleshoot-s2i 9cb6ff9] Fixed Express release
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+[student@workstation DO180-apps]$ git push
+Counting objects: 7, done.
+Delta compression using up to 2 threads.
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (4/4), 397 bytes | 0 bytes/s, done.
+Total 4 (delta 2), reused 0 (delta 0)
+remote: Resolving deltas: 100% (2/2), completed with 2 local objects.
+To https://github.com/carol101/DO180-apps.git
+   e9f0031..9cb6ff9  troubleshoot-s2i -> troubleshoot-s2i
+[student@workstation DO180-apps]$  oc start-build bc/nodejs-hello
+build.build.openshift.io/nodejs-hello-2 started
+[student@workstation DO180-apps]$ oc logs -f bc/nodejs-hello
+Cloning "https://github.com/carol101/DO180-apps" ...
+	Commit:	9cb6ff9c598f7bfd6355e545c5aae1621242cc58 (Fixed Express release)
+	Author:	Student User <student@workstation.lab.example.com>
+	Date:	Wed Aug 12 18:42:47 2020 +0000
+Caching blobs under "/var/cache/blobs".
+Getting image source signatures
+Copying blob sha256:f31f544bb80de4b38c70506516c91d18e7de1c6988143ebe000b49159e5b1f14
+Copying blob sha256:d327c1598329494579ba3d62999df41f11bff9a2bfad57fb49b30324404ac42a
+Copying blob sha256:9c9d2ac50b32c2bb48d07fb4e80e81552acc76ade952777f5deb05fdac8f88c6
+Copying blob sha256:48ed3bfd822646e50676cd7606af43e984db141bb1755904362f1eb64684c68a
+Copying blob sha256:ad46648f2433aa416763060fb4baaefe64baeda603d4e572f883c21c5482fea1
+Copying config sha256:65d8e33f8671dc979c8a6330082a9a3f8b79bb7bda223aade2bfdbbc584ec51c
+Writing manifest to image destination
+Storing signatures
+Generating dockerfile with builder image image-registry.openshift-image-registry.svc:5000/openshift/nodejs@sha256:bf4030ac45b8b3ff0ea2892261f1fb5df5b077a67ef717836ac0de879cc775d9
+STEP 1: FROM image-registry.openshift-image-registry.svc:5000/openshift/nodejs@sha256:bf4030ac45b8b3ff0ea2892261f1fb5df5b077a67ef717836ac0de879cc775d9
+STEP 2: LABEL "io.openshift.build.commit.author"="Student User <student@workstation.lab.example.com>" "io.openshift.build.commit.date"="Wed Aug 12 18:42:47 2020 +0000" "io.openshift.build.commit.id"="9cb6ff9c598f7bfd6355e545c5aae1621242cc58" "io.openshift.build.commit.ref"="troubleshoot-s2i" "io.openshift.build.commit.message"="Fixed Express release" "io.openshift.build.source-location"="https://github.com/carol101/DO180-apps" "io.openshift.build.source-context-dir"="nodejs-helloworld" "io.openshift.build.image"="image-registry.openshift-image-registry.svc:5000/openshift/nodejs@sha256:bf4030ac45b8b3ff0ea2892261f1fb5df5b077a67ef717836ac0de879cc775d9"
+STEP 3: ENV OPENSHIFT_BUILD_NAME="nodejs-hello-2" OPENSHIFT_BUILD_NAMESPACE="carol-liang-nodejs" OPENSHIFT_BUILD_SOURCE="https://github.com/carol101/DO180-apps" OPENSHIFT_BUILD_REFERENCE="troubleshoot-s2i" OPENSHIFT_BUILD_COMMIT="9cb6ff9c598f7bfd6355e545c5aae1621242cc58" npm_config_registry="http://nexus-common.apps.ocp-na2.prod.nextcle.com/repository/npm-proxy"
+STEP 4: USER root
+STEP 5: COPY upload/src /tmp/src
+STEP 6: RUN chown -R 1001:0 /tmp/src
+time="2020-08-12T18:44:38Z" level=warning msg="pkg/chroot: error unmounting \"/tmp/buildah462650910/mnt/rootfs\": error checking if \"/tmp/buildah462650910/mnt/rootfs/sys/fs/cgroup/rdma\" is mounted: no such file or directory"
+time="2020-08-12T18:44:38Z" level=warning msg="pkg/bind: error unmounting \"/tmp/buildah462650910/mnt/rootfs\": error checking if \"/tmp/buildah462650910/mnt/rootfs/sys/fs/cgroup/rdma\" is mounted: no such file or directory"
+STEP 7: USER 1001
+STEP 8: RUN /usr/libexec/s2i/assemble
+---> Installing application source ...
+---> Installing all dependencies
+npm notice created a lockfile as package-lock.json. You should commit this file.
+npm WARN nodejs-helloworld@1.0.0 No repository field.
+npm WARN nodejs-helloworld@1.0.0 license should be a valid SPDX license expression
+
+added 43 packages from 27 contributors in 2.94s
+---> Building in production mode
+---> Pruning the development dependencies
+npm WARN nodejs-helloworld@1.0.0 No repository field.
+npm WARN nodejs-helloworld@1.0.0 license should be a valid SPDX license expression
+
+up to date in 0.809s
+/opt/app-root/src/.npm is not a mountpoint
+---> Cleaning the npm cache /opt/app-root/src/.npm
+/tmp is not a mountpoint
+---> Cleaning the /tmp/npm-*
+time="2020-08-12T18:44:47Z" level=warning msg="pkg/chroot: error unmounting \"/tmp/buildah647348227/mnt/rootfs\": error checking if \"/tmp/buildah647348227/mnt/rootfs/sys/fs/cgroup/rdma\" is mounted: no such file or directory"
+time="2020-08-12T18:44:47Z" level=warning msg="pkg/bind: error unmounting \"/tmp/buildah647348227/mnt/rootfs\": error checking if \"/tmp/buildah647348227/mnt/rootfs/sys/fs/cgroup/rdma\" is mounted: no such file or directory"
+STEP 9: CMD /usr/libexec/s2i/run
+STEP 10: COMMIT temp.builder.openshift.io/carol-liang-nodejs/nodejs-hello-2:dae0cefc
+Getting image source signatures
+Copying blob sha256:a551fb857b61df88ae64cded378611456294ee7143bc068eb3a9ee1a29934658
+Copying blob sha256:08c4aa164cbaadfb32414e39d9b252a5382b9db1dd8e028fb11805074edbe608
+Copying blob sha256:7c6c57a17fb3de2b83515a0e33782d6d769fa90725da4eb75311e5ffbf601e49
+Copying blob sha256:c3b514cae9b11a6aadc78fdbb3d7b71226759927a8149f97ea400628744ad2c9
+Copying blob sha256:cbf37c90f9eeadb5d2e74836f652c53879efffd5eb8fb1c7d2b6bb2680aa2739
+Copying blob sha256:482e6115210955b3b2b3366f6e7f9adf8c2f80b6f7ae121a60714cf3bb896cd5
+Copying config sha256:e6035515e8dd8a396e31e85e2fe93ab6af98d3a34efbad1a2948e2d6897707ee
+Writing manifest to image destination
+Storing signatures
+e6035515e8dd8a396e31e85e2fe93ab6af98d3a34efbad1a2948e2d6897707ee
+
+Pushing image image-registry.openshift-image-registry.svc:5000/carol-liang-nodejs/nodejs-hello:latest ...
+Getting image source signatures
+Copying blob sha256:482e6115210955b3b2b3366f6e7f9adf8c2f80b6f7ae121a60714cf3bb896cd5
+Copying blob sha256:f31f544bb80de4b38c70506516c91d18e7de1c6988143ebe000b49159e5b1f14
+Copying blob sha256:ad46648f2433aa416763060fb4baaefe64baeda603d4e572f883c21c5482fea1
+Copying blob sha256:d327c1598329494579ba3d62999df41f11bff9a2bfad57fb49b30324404ac42a
+Copying blob sha256:48ed3bfd822646e50676cd7606af43e984db141bb1755904362f1eb64684c68a
+Copying blob sha256:9c9d2ac50b32c2bb48d07fb4e80e81552acc76ade952777f5deb05fdac8f88c6
+Copying config sha256:e6035515e8dd8a396e31e85e2fe93ab6af98d3a34efbad1a2948e2d6897707ee
+Writing manifest to image destination
+Storing signatures
+Successfully pushed image-registry.openshift-image-registry.svc:5000/carol-liang-nodejs/nodejs-hello@sha256:96617c41c93b7af4b6bb0d6bdec321de5147c48fd588f96693eb0685c874939b
+Push successful
+[student@workstation DO180-apps]$ oc get pods
+NAME                    READY   STATUS              RESTARTS   AGE
+nodejs-hello-1-build    0/1     Error               0          8m57s
+nodejs-hello-1-deploy   0/1     ContainerCreating   0          7s
+nodejs-hello-2-build    0/1     Completed           0          104s
+[student@workstation DO180-apps]$ oc get pods
+NAME                    READY   STATUS              RESTARTS   AGE
+nodejs-hello-1-6fr2x    0/1     ContainerCreating   0          5s
+nodejs-hello-1-build    0/1     Error               0          9m4s
+nodejs-hello-1-deploy   1/1     Running             0          14s
+nodejs-hello-2-build    0/1     Completed           0          111s
+[student@workstation DO180-apps]$ oc get pods
+NAME                    READY   STATUS      RESTARTS   AGE
+nodejs-hello-1-6fr2x    0/1     Error       2          41s
+nodejs-hello-1-build    0/1     Error       0          9m40s
+nodejs-hello-1-deploy   1/1     Running     0          50s
+nodejs-hello-2-build    0/1     Completed   0          2m27s
+[student@workstation DO180-apps]$ oc logs dc/nodejs-hello
+Environment: 
+	DEV_MODE=false
+	NODE_ENV=production
+	DEBUG_PORT=5858
+Launching via npm...
+npm info it worked if it ends with ok
+npm info using npm@6.4.1
+npm info using node@v8.16.1
+npm ERR! missing script: start
+npm timing npm Completed in 118ms
+
+npm ERR! A complete log of this run can be found in:
+npm ERR!     /opt/app-root/src/.npm/_logs/2020-08-12T18_46_06_071Z-debug.log
+[student@workstation DO180-apps]$ vim ~/DO180-apps/nodejs-helloworld/package.json
+[student@workstation DO180-apps]$ git commit -am "Added start up script"
+[troubleshoot-s2i 2d78d40] Added start up script
+ 1 file changed, 3 insertions(+)
+[student@workstation DO180-apps]$ git push
+Counting objects: 7, done.
+Delta compression using up to 2 threads.
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (4/4), 427 bytes | 0 bytes/s, done.
+Total 4 (delta 2), reused 0 (delta 0)
+remote: Resolving deltas: 100% (2/2), completed with 2 local objects.
+To https://github.com/carol101/DO180-apps.git
+   9cb6ff9..2d78d40  troubleshoot-s2i -> troubleshoot-s2i
+[student@workstation DO180-apps]$ oc start-build bc/nodejs-hello
+build.build.openshift.io/nodejs-hello-3 started
+[student@workstation DO180-apps]$ oc get pods -w
+NAME                    READY   STATUS             RESTARTS   AGE
+nodejs-hello-1-6fr2x    0/1     CrashLoopBackOff   5          5m46s
+nodejs-hello-1-build    0/1     Error              0          14m
+nodejs-hello-1-deploy   0/1     Completed          0          5m55s
+nodejs-hello-2-build    0/1     Completed          0          7m32s
+nodejs-hello-3-build    0/1     PodInitializing    0          13s
+nodejs-hello-3-build   1/1   Running   0     14s
+nodejs-hello-1-6fr2x   0/1   Error   6     6m24s
+nodejs-hello-1-6fr2x   0/1   CrashLoopBackOff   6     6m38s
+nodejs-hello-3-build   0/1   Completed   0     93s
+nodejs-hello-3-build   0/1   Completed   0     93s
+nodejs-hello-2-deploy   0/1   Pending   0     0s
+nodejs-hello-2-deploy   0/1   Pending   0     0s
+nodejs-hello-2-deploy   0/1   ContainerCreating   0     0s
+nodejs-hello-2-deploy   0/1   ContainerCreating   0     8s
+nodejs-hello-2-deploy   1/1   Running   0     8s
+nodejs-hello-2-fnw58   0/1   Pending   0     0s
+nodejs-hello-2-fnw58   0/1   Pending   0     0s
+nodejs-hello-2-fnw58   0/1   ContainerCreating   0     0s
+nodejs-hello-2-fnw58   0/1   ContainerCreating   0     9s
+nodejs-hello-2-fnw58   1/1   Running   0     11s
+nodejs-hello-1-6fr2x   0/1   Terminating   6     7m26s
+nodejs-hello-1-6fr2x   0/1   Terminating   6     7m27s
+nodejs-hello-2-deploy   0/1   Completed   0     23s
+nodejs-hello-2-deploy   0/1   Completed   0     23s
+nodejs-hello-1-6fr2x   0/1   Terminating   6     7m41s
+nodejs-hello-1-6fr2x   0/1   Terminating   6     7m41s
+^C[student@workstation DO180-apps]$ oc logs dc/nodejs-hello
+Environment: 
+	DEV_MODE=false
+	NODE_ENV=production
+	DEBUG_PORT=5858
+Launching via npm...
+npm info it worked if it ends with ok
+npm info using npm@6.4.1
+npm info using node@v8.16.1
+npm info lifecycle nodejs-helloworld@1.0.0~prestart: nodejs-helloworld@1.0.0
+npm info lifecycle nodejs-helloworld@1.0.0~start: nodejs-helloworld@1.0.0
+
+> nodejs-helloworld@1.0.0 start /opt/app-root/src
+> node app.js
+
+Example app listening on port 8080!
+[student@workstation DO180-apps]$ oc expose svc/nodejs-hello
+route.route.openshift.io/nodejs-hello exposed
+[student@workstation DO180-apps]$ oc get route -o yaml
+apiVersion: v1
+items:
+- apiVersion: route.openshift.io/v1
+  kind: Route
+  metadata:
+    annotations:
+      openshift.io/host.generated: "true"
+    creationTimestamp: "2020-08-12T18:54:41Z"
+    labels:
+      app: nodejs-hello
+    name: nodejs-hello
+    namespace: carol-liang-nodejs
+    resourceVersion: "115438301"
+    selfLink: /apis/route.openshift.io/v1/namespaces/carol-liang-nodejs/routes/nodejs-hello
+    uid: 47a276b2-dccd-11ea-87eb-0a580a800041
+  spec:
+    host: nodejs-hello-carol-liang-nodejs.apps.ocp-na2.prod.nextcle.com
+    port:
+      targetPort: 8080-tcp
+    subdomain: ""
+    to:
+      kind: Service
+      name: nodejs-hello
+      weight: 100
+    wildcardPolicy: None
+  status:
+    ingress:
+    - conditions:
+      - lastTransitionTime: "2020-08-12T18:54:41Z"
+        status: "True"
+        type: Admitted
+      host: nodejs-hello-carol-liang-nodejs.apps.ocp-na2.prod.nextcle.com
+      routerCanonicalHostname: apps.ocp-na2.prod.nextcle.com
+      routerName: default
+      wildcardPolicy: None
+kind: List
+metadata:
+  resourceVersion: ""
+  selfLink: ""
+[student@workstation DO180-apps]$ curl -w "\n" http://nodejs-hello-carol-liang-nodejs.apps.ocp-na2.prod.nextcle.com
+Hello World!
+[student@workstation DO180-apps]$ lab troubleshoot-s2i finish
+
+Completing the Guided Exercise: Troubleshooting an OpenShift Build
+
+ · Log in on OpenShift.........................................  SUCCESS
+ · Deleting the 'carol-liang-nodejs' OpenShift project.........  SUCCESS
+[student@workstation DO180-apps]$ ls
+example  mystuff  nodejs-app  nodejs-helloworld  php-helloworld  README.md  temps  todoapp
+[student@workstation DO180-apps]$ cd nodejs-helloworld/
+[student@workstation nodejs-helloworld]$ ls
+app.js  package.json
+[student@workstation nodejs-helloworld]$ more app.js 
+var express = require('express');
+app = express();
+
+app.get('/', function (req, res) {
+  res.send('Hello World!');
+});
+
+app.listen(8080, function () {
+  console.log('Example app listening on port 8080!');
+});
+
+[student@workstation nodejs-helloworld]$ more package.json 
+{
+  "name": "nodejs-helloworld",
+  "version": "1.0.0",
+  "description": "Hello World!",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "author": "Red Hat Training",
+  "license": "ASL",
+  "dependencies": {
+    "express": "~4.14.x"
+  }
+}
+[student@workstation nodejs-helloworld]$ lab troubleshoot-container start
+
+Setting up workstation for the Guided Excercise: Configuring Apache Container Logs for Debugging
+
+ · Checking podman configuration...............................  SUCCESS
+ · Downloading starter project.................................  SUCCESS
+ · Downloading solution project................................  SUCCESS
+
+Setup successful. Please proceed with the exercise.
+
+[student@workstation nodejs-helloworld]$ more /home/student/DO180/
+
+*** /home/student/DO180/: directory ***
+
+[student@workstation nodejs-helloworld]$ more /home/student/DO180/labs/troubleshoot-container/conf/httpd.conf
+#
+# This is the main Apache HTTP server configuration file.  It contains the
+# configuration directives that give the server its instructions.
+# See <URL:http://httpd.apache.org/docs/2.4/> for detailed information.
+# In particular, see
+# <URL:http://httpd.apache.org/docs/2.4/mod/directives.html>
+# for a discussion of each configuration directive.
+#
+# See the httpd.conf(5) man page for more information on this configuration,
+# and httpd.service(8) on using and configuring the httpd service.
+#
+# Do NOT simply read the instructions in here without understanding
+# what they do.  They're here only as hints or reminders.  If you are unsure
+# consult the online docs. You have been warned.
+#
+# Configuration and logfile names: If the filenames you specify for many
+# of the server's control files begin with "/" (or "drive:/" for Win32), the
+# server will use that explicit path.  If the filenames do *not* begin
+# with "/", the value of ServerRoot is prepended -- so 'log/access_log'
+# with ServerRoot set to '/www' will be interpreted by the
+# server as '/www/log/access_log', where as '/log/access_log' will be
+# interpreted as '/log/access_log'.
+
+#
+# ServerRoot: The top of the directory tree under which the server's
+# configuration, error, and log files are kept.
+#
+# Do not add a slash at the end of the directory path.  If you point
+# ServerRoot at a non-local disk, be sure to specify a local disk on the
+# Mutex directive, if file-based mutexes are used.  If you wish to share the
+# same ServerRoot for multiple httpd daemons, you will need to change at
+# least PidFile.
+#
+ServerRoot "/etc/httpd"
+
+#
+# Listen: Allows you to bind Apache to specific IP addresses and/or
+# ports, instead of the default. See also the <VirtualHost>
+# directive.
+#
+# Change this to Listen on specific IP addresses as shown below to
+# prevent Apache from glomming onto all bound IP addresses.
+#
+#Listen 12.34.56.78:80
+Listen 80
+
+#
+# Dynamic Shared Object (DSO) Support
+#
+# To be able to use the functionality of a module which was built as a DSO you
+# have to place corresponding `LoadModule' lines at this location so the
+# directives contained in it are actually available _before_ they are used.
+# Statically compiled modules (those listed by `httpd -l') do not need
+# to be loaded here.
+#
+# Example:
+# LoadModule foo_module modules/mod_foo.so
+#
+Include conf.modules.d/*.conf
+
+#
+# If you wish httpd to run as a different user or group, you must run
+# httpd as root initially and it will switch.
+#
+# User/Group: The name (or #number) of the user/group to run httpd as.
+# It is usually good practice to create a dedicated user and group for
+# running httpd, as with most system services.
+#
+User apache
+Group apache
+
+# 'Main' server configuration
+#
+# The directives in this section set up the values used by the 'main'
+# server, which responds to any requests that aren't handled by a
+# <VirtualHost> definition.  These values also provide defaults for
+# any <VirtualHost> containers you may define later in the file.
+#
+# All of these directives may appear inside <VirtualHost> containers,
+# in which case these default settings will be overridden for the
+# virtual host being defined.
+#
+
+#
+# ServerAdmin: Your address, where problems with the server should be
+# e-mailed.  This address appears on some server-generated pages, such
+# as error documents.  e.g. admin@your-domain.com
+#
+ServerAdmin root@localhost
+
+#
+# ServerName gives the name and port that the server uses to identify itself.
+# This can often be determined automatically, but we recommend you specify
+# it explicitly to prevent problems during startup.
+#
+# If your host doesn't have a registered DNS name, enter its IP address here.
+#
+#ServerName www.example.com:80
+
+#
+# Deny access to the entirety of your server's filesystem. You must
+# explicitly permit access to web content directories in other
+# <Directory> blocks below.
+#
+<Directory />
+    AllowOverride none
+    Require all denied
+</Directory>
+
+#
+# Note that from this point forward you must specifically allow
+# particular features to be enabled - so if something's not working as
+# you might expect, make sure that you have specifically enabled it
+# below.
+#
+/stdout
+...skipping
+# container, that host's errors will be logged there and not here.
+#
+ErrorLog "/dev/stdout"
+
+#
+# LogLevel: Control the number of messages logged to the error_log.
+# Possible values include: debug, info, notice, warn, error, crit,
+# alert, emerg.
+#
+LogLevel debug
+
+<IfModule log_config_module>
+    #
+    # The following directives define some format nicknames for use with
+    # a CustomLog directive (see below).
+    #
+    LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" combined
+    LogFormat "%h %l %u %t \"%r\" %>s %b" common
+
+    <IfModule logio_module>
+      # You need to enable mod_logio.c to use %I and %O
+      LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\" %I %O" combinedio
+    </IfModule>
+
+    #
+    # The location and format of the access logfile (Common Logfile Format).
+    # If you do not define any access logfiles within a <VirtualHost>
+    # container, they will be logged here.  Contrariwise, if you *do*
+    # define per-<VirtualHost> access logfiles, transactions will be
+    # logged therein and *not* in this file.
+    #
+    CustomLog "/dev/stdout" common
+
+    #
+    # If you prefer a logfile with access, agent, and referer information
+    # (Combined Logfile Format) you can use the following directive.
+    #
+    # CustomLog "/dev/stdout" combined
+</IfModule>
+
+<IfModule alias_module>
+    #
+    # Redirect: Allows you to tell clients about documents that used to
+    # exist in your server's namespace, but do not anymore. The client
+    # will make a new request for the document at its new location.
+    # Example:
+    # Redirect permanent /foo http://www.example.com/bar
+
+    #
+    # Alias: Maps web paths into filesystem paths and is used to
+    # access content that does not live under the DocumentRoot.
+    # Example:
+    # Alias /webpath /full/filesystem/path
+    #
+    # If you include a trailing / on /webpath then the server will
+    # require it to be present in the URL.  You will also likely
+    # need to provide a <Directory> section to allow access to
+    # the filesystem path.
+[student@workstation nodejs-helloworld]$ cd ~/DO180/labs/troubleshoot-container
+[student@workstation troubleshoot-container]$ sudo podman build -t troubleshoot-container .
+STEP 1: FROM redhattraining/httpd-parent
+Getting image source signatures
+Skipping fetch of repeat blob sha256:787f47dbeaac926cc8c927a48e8a84fc97e05fbd1c08a4c9c4ddcaddfd87e2f7
+Skipping fetch of repeat blob sha256:6a5240d60dc4e1ade0d103badb2a897e8103ebf0ebe08350cd582bbc9671cc7a
+Copying blob sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+ 32 B / 32 B [==============================================================] 0s
+Skipping fetch of repeat blob sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Skipping fetch of repeat blob sha256:08b8c9fdec444ba23c764be2e8c24e1526d664dc72339af2429dc66fbfefe850
+Skipping fetch of repeat blob sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Skipping fetch of repeat blob sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Skipping fetch of repeat blob sha256:408208567b9aab11c5265eadd4cbc9c890d73d74ffcdaf3e2309aaef12cd9394
+Skipping fetch of repeat blob sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Skipping fetch of repeat blob sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Writing manifest to image destination
+Storing signatures
+STEP 2: COPY src/ ${DOCROOT}/
+ERRO[0001] HOSTNAME is not supported for OCI image format, hostname 013f2af5471a will be ignored. Must use `docker` format 
+--> 72590bf668a843b672938c6930cc7ea7a96aa43b031c3ca3809b13f37e4eaf72
+STEP 3: FROM 72590bf668a843b672938c6930cc7ea7a96aa43b031c3ca3809b13f37e4eaf72
+STEP 4: MAINTAINER username <username@example.com>
+--> 7131d2a9c47eac4c7bc60d10ae4574450a62a2c0c49375e735c79ba5f72bf458
+STEP 5: FROM 7131d2a9c47eac4c7bc60d10ae4574450a62a2c0c49375e735c79ba5f72bf458
+STEP 6: COPY ./conf/httpd.conf /etc/httpd/conf/httpd.conf
+--> 1c10cecad7149fab71ed3fe7615b38d91702b37a90c57e50fb7280d69bf9664c
+STEP 7: COMMIT troubleshoot-container
+[student@workstation troubleshoot-container]$ sudo podman images
+REPOSITORY                                        TAG        IMAGE ID       CREATED          SIZE
+localhost/troubleshoot-container                  latest     1c10cecad714   27 seconds ago   236MB
+<none>                                            <none>     dbbe99b3bb58   30 hours ago     236MB
+registry.access.redhat.com/rhel                   latest     9da37a681956   9 days ago       215MB
+quay.io/redhattraining/httpd-parent               latest     4346d3cace25   14 months ago    236MB
+registry.access.redhat.com/rhscl/httpd-24-rhel7   2.4-36.8   5f9f898a3093   2 years ago      309MB
+[student@workstation troubleshoot-container]$ sudo podman run --name troubleshoot-container -d -p 10080:80 troubleshoot-container
+8b45995edee651c611392c48c991bf98b6c3d89c9f1594e31c8eb9a4923b6438
+[student@workstation troubleshoot-container]$ sudo podman logs -f troubleshoot-container
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.88.0.17. Set the 'ServerName' directive globally to suppress this message
+[Wed Aug 12 19:35:14.920220 2020] [suexec:notice] [pid 1:tid 140596218075392] AH01232: suEXEC mechanism enabled (wrapper: /usr/sbin/suexec)
+[Wed Aug 12 19:35:14.925184 2020] [http2:debug] [pid 1:tid 140596218075392] mod_http2.c(112): AH03089: initializing post config dry run
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.88.0.17. Set the 'ServerName' directive globally to suppress this message
+[Wed Aug 12 19:35:14.943246 2020] [slotmem_shm:debug] [pid 1:tid 140596218075392] mod_slotmem_shm.c(497): AH02301: attach looking for /run/httpd/slotmem-shm-mod_heartmonitor_0.shm
+[Wed Aug 12 19:35:14.943269 2020] [lbmethod_heartbeat:notice] [pid 1:tid 140596218075392] AH02282: No slotmem from mod_heartmonitor
+[Wed Aug 12 19:35:14.944410 2020] [http2:info] [pid 1:tid 140596218075392] AH03090: mod_http2 (v1.11.3-git, feats=CHPRIO+SHA256+INVHD+DWINS, nghttp2 1.33.0), initializing...
+[Wed Aug 12 19:35:14.944454 2020] [http2:warn] [pid 1:tid 140596218075392] AH02951: mod_ssl does not seem to be enabled
+[Wed Aug 12 19:35:14.944530 2020] [proxy_http2:info] [pid 1:tid 140596218075392] AH03349: mod_proxy_http2 (v1.11.3-git, nghttp2 1.33.0), initializing...
+[Wed Aug 12 19:35:14.944557 2020] [proxy_hcheck:debug] [pid 1:tid 140596218075392] mod_proxy_hcheck.c(1050): AH03265: watchdog callback registered (_proxy_hcheck_ for 10.88.0.17)
+[Wed Aug 12 19:35:14.944582 2020] [watchdog:debug] [pid 1:tid 140596218075392] mod_watchdog.c(454): AH010033: Watchdog: Running with WatchdogInterval 1000ms
+[Wed Aug 12 19:35:14.944586 2020] [watchdog:debug] [pid 1:tid 140596218075392] mod_watchdog.c(462): AH02974: Watchdog: found parent providers.
+[Wed Aug 12 19:35:14.944589 2020] [watchdog:debug] [pid 1:tid 140596218075392] mod_watchdog.c(508): AH02977: Watchdog: found child providers.
+[Wed Aug 12 19:35:14.944591 2020] [watchdog:debug] [pid 1:tid 140596218075392] mod_watchdog.c(516): AH02978: Watchdog: Looking for child (_default_).
+[Wed Aug 12 19:35:14.944593 2020] [watchdog:debug] [pid 1:tid 140596218075392] mod_watchdog.c(516): AH02978: Watchdog: Looking for child (_proxy_hcheck_).
+[Wed Aug 12 19:35:14.944601 2020] [watchdog:debug] [pid 1:tid 140596218075392] mod_watchdog.c(542): AH02979: Watchdog: Created singleton mutex (_proxy_hcheck_).
+[Wed Aug 12 19:35:14.944603 2020] [watchdog:debug] [pid 1:tid 140596218075392] mod_watchdog.c(516): AH02978: Watchdog: Looking for child (_singleton_).
+[Wed Aug 12 19:35:14.947222 2020] [mpm_event:notice] [pid 1:tid 140596218075392] AH00489: Apache/2.4.37 (Red Hat Enterprise Linux) configured -- resuming normal operations
+[Wed Aug 12 19:35:14.947238 2020] [mpm_event:info] [pid 1:tid 140596218075392] AH00490: Server built: Apr  5 2019 07:31:21
+[Wed Aug 12 19:35:14.947248 2020] [core:notice] [pid 1:tid 140596218075392] AH00094: Command line: '/usr/sbin/httpd -D FOREGROUND'
+[Wed Aug 12 19:35:14.947251 2020] [core:debug] [pid 1:tid 140596218075392] log.c(1571): AH02639: Using SO_REUSEPORT: yes (1)
+[Wed Aug 12 19:35:14.953451 2020] [watchdog:debug] [pid 6:tid 140595945871104] mod_watchdog.c(158): AH02972: Singleton Watchdog (_proxy_hcheck_) running
+[Wed Aug 12 19:35:14.953506 2020] [proxy_hcheck:debug] [pid 6:tid 140595945871104] mod_proxy_hcheck.c(893): AH03258: _proxy_hcheck_ watchdog started.
+[Wed Aug 12 19:35:14.954840 2020] [watchdog:debug] [pid 7:tid 140596218075392] mod_watchdog.c(590): AH02981: Watchdog: Created child worker thread (_proxy_hcheck_).
+[Wed Aug 12 19:35:14.954916 2020] [proxy:debug] [pid 7:tid 140596218075392] proxy_util.c(1923): AH00925: initializing worker proxy:reverse shared
+[Wed Aug 12 19:35:14.954936 2020] [proxy:debug] [pid 7:tid 140596218075392] proxy_util.c(1980): AH00927: initializing worker proxy:reverse local
+[Wed Aug 12 19:35:14.954971 2020] [proxy:debug] [pid 7:tid 140596218075392] proxy_util.c(2015): AH00930: initialized pool in child 7 for (*) min=0 max=61 smax=61
+[Wed Aug 12 19:35:14.954974 2020] [watchdog:debug] [pid 6:tid 140596218075392] mod_watchdog.c(590): AH02981: Watchdog: Created child worker thread (_proxy_hcheck_).
+[Wed Aug 12 19:35:14.955067 2020] [proxy_hcheck:debug] [pid 6:tid 140595945871104] mod_proxy_hcheck.c(907): AH03313: apr_thread_pool_create() with 16 threads succeeded
+[Wed Aug 12 19:35:14.955160 2020] [proxy:debug] [pid 6:tid 140596218075392] proxy_util.c(1923): AH00925: initializing worker proxy:reverse shared
+[Wed Aug 12 19:35:14.955174 2020] [proxy:debug] [pid 6:tid 140596218075392] proxy_util.c(1980): AH00927: initializing worker proxy:reverse local
+[Wed Aug 12 19:35:14.955190 2020] [proxy:debug] [pid 6:tid 140596218075392] proxy_util.c(2015): AH00930: initialized pool in child 6 for (*) min=0 max=61 smax=61
+[Wed Aug 12 19:35:14.956979 2020] [watchdog:debug] [pid 8:tid 140596218075392] mod_watchdog.c(590): AH02981: Watchdog: Created child worker thread (_proxy_hcheck_).
+[Wed Aug 12 19:35:14.957036 2020] [proxy:debug] [pid 8:tid 140596218075392] proxy_util.c(1923): AH00925: initializing worker proxy:reverse shared
+[Wed Aug 12 19:35:14.957051 2020] [proxy:debug] [pid 8:tid 140596218075392] proxy_util.c(1980): AH00927: initializing worker proxy:reverse local
+[Wed Aug 12 19:35:14.957088 2020] [proxy:debug] [pid 8:tid 140596218075392] proxy_util.c(2015): AH00930: initialized pool in child 8 for (*) min=0 max=61 smax=61
+[Wed Aug 12 19:35:14.957226 2020] [mpm_event:debug] [pid 6:tid 140595418691328] event.c(2313): AH02471: start_threads: Using epoll (wakeable)
+[Wed Aug 12 19:35:14.959136 2020] [mpm_event:debug] [pid 7:tid 140595626948352] event.c(2313): AH02471: start_threads: Using epoll (wakeable)
+[Wed Aug 12 19:35:14.960206 2020] [mpm_event:debug] [pid 8:tid 140595626948352] event.c(2313): AH02471: start_threads: Using epoll (wakeable)
+[Wed Aug 12 19:36:57.659524 2020] [authz_core:debug] [pid 6:tid 140595410298624] mod_authz_core.c(820): [client 10.88.0.1:37088] AH01626: authorization result of Require all granted: granted
+[Wed Aug 12 19:36:57.659604 2020] [authz_core:debug] [pid 6:tid 140595410298624] mod_authz_core.c(820): [client 10.88.0.1:37088] AH01626: authorization result of <RequireAny>: granted
+[Wed Aug 12 19:36:57.659750 2020] [authz_core:debug] [pid 6:tid 140595410298624] mod_authz_core.c(820): [client 10.88.0.1:37088] AH01626: authorization result of Require all granted: granted
+[Wed Aug 12 19:36:57.659754 2020] [authz_core:debug] [pid 6:tid 140595410298624] mod_authz_core.c(820): [client 10.88.0.1:37088] AH01626: authorization result of <RequireAny>: granted
+10.88.0.1 - - [12/Aug/2020:19:36:57 +0000] "GET / HTTP/1.1" 200 39
+[student@workstation troubleshoot-container]$ cd ~
+[student@workstation ~]$ ls
+-a       DO180       DO288       Documents  info.txt  Pictures  {{range .Mounts}}{{println .Destination}}{{end}}  Videos
+Desktop  DO180-apps  DO288-apps  Downloads  Music     Public    Templates
+[student@workstation ~]$ cd D0180-apps
+bash: cd: D0180-apps: No such file or directory
+[student@workstation ~]$ cd DO180-apps
+[student@workstation DO180-apps]$ ls
+example  mystuff  nodejs-app  nodejs-helloworld  php-helloworld  README.md  temps  todoapp
+[student@workstation DO180-apps]$ cd mystuff
+[student@workstation mystuff]$ ls
+*.*
+[student@workstation mystuff]$ ll
+total 84
+-rw-rw-r--. 1 student student 82734 Aug 11 21:44 *.*
+[student@workstation mystuff]$ vim ch6_8.txt
+
+--- from another terminal--------
+[student@workstation ~]$ oc log dc/nodejs-hello
+log is DEPRECATED and will be removed in a future version. Use logs instead.
+Environment: 
+	DEV_MODE=false
+	NODE_ENV=production
+	DEBUG_PORT=5858
+Launching via npm...
+npm info it worked if it ends with ok
+npm info using npm@6.4.1
+npm info using node@v8.16.1
+npm info lifecycle nodejs-helloworld@1.0.0~prestart: nodejs-helloworld@1.0.0
+npm info lifecycle nodejs-helloworld@1.0.0~start: nodejs-helloworld@1.0.0
+
+> nodejs-helloworld@1.0.0 start /opt/app-root/src
+> node app.js
+
+Example app listening on port 8080!
+[student@workstation ~]$ oc logs dc/nodejs-hello
+Environment: 
+	DEV_MODE=false
+	NODE_ENV=production
+	DEBUG_PORT=5858
+Launching via npm...
+npm info it worked if it ends with ok
+npm info using npm@6.4.1
+npm info using node@v8.16.1
+npm info lifecycle nodejs-helloworld@1.0.0~prestart: nodejs-helloworld@1.0.0
+npm info lifecycle nodejs-helloworld@1.0.0~start: nodejs-helloworld@1.0.0
+
+> nodejs-helloworld@1.0.0 start /opt/app-root/src
+> node app.js
+
+Example app listening on port 8080!
+[student@workstation ~]$ curl http://127.0.0.1:10080
+Hello from the httpd-parent container!
+[student@workstation ~]$ sudo podman logs troubleshoot-container
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.88.0.17. Set the 'ServerName' directive globally to suppress this message
+[Wed Aug 12 19:35:14.920220 2020] [suexec:notice] [pid 1:tid 140596218075392] AH01232: suEXEC mechanism enabled (wrapper: /usr/sbin/suexec)
+[Wed Aug 12 19:35:14.925184 2020] [http2:debug] [pid 1:tid 140596218075392] mod_http2.c(112): AH03089: initializing post config dry run
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.88.0.17. Set the 'ServerName' directive globally to suppress this message
+[Wed Aug 12 19:35:14.943246 2020] [slotmem_shm:debug] [pid 1:tid 140596218075392] mod_slotmem_shm.c(497): AH02301: attach looking for /run/httpd/slotmem-shm-mod_heartmonitor_0.shm
+[Wed Aug 12 19:35:14.943269 2020] [lbmethod_heartbeat:notice] [pid 1:tid 140596218075392] AH02282: No slotmem from mod_heartmonitor
+[Wed Aug 12 19:35:14.944410 2020] [http2:info] [pid 1:tid 140596218075392] AH03090: mod_http2 (v1.11.3-git, feats=CHPRIO+SHA256+INVHD+DWINS, nghttp2 1.33.0), initializing...
+[Wed Aug 12 19:35:14.944454 2020] [http2:warn] [pid 1:tid 140596218075392] AH02951: mod_ssl does not seem to be enabled
+[Wed Aug 12 19:35:14.944530 2020] [proxy_http2:info] [pid 1:tid 140596218075392] AH03349: mod_proxy_http2 (v1.11.3-git, nghttp2 1.33.0), initializing...
+[Wed Aug 12 19:35:14.944557 2020] [proxy_hcheck:debug] [pid 1:tid 140596218075392] mod_proxy_hcheck.c(1050): AH03265: watchdog callback registered (_proxy_hcheck_ for 10.88.0.17)
+[Wed Aug 12 19:35:14.944582 2020] [watchdog:debug] [pid 1:tid 140596218075392] mod_watchdog.c(454): AH010033: Watchdog: Running with WatchdogInterval 1000ms
+[Wed Aug 12 19:35:14.944586 2020] [watchdog:debug] [pid 1:tid 140596218075392] mod_watchdog.c(462): AH02974: Watchdog: found parent providers.
+[Wed Aug 12 19:35:14.944589 2020] [watchdog:debug] [pid 1:tid 140596218075392] mod_watchdog.c(508): AH02977: Watchdog: found child providers.
+[Wed Aug 12 19:35:14.944591 2020] [watchdog:debug] [pid 1:tid 140596218075392] mod_watchdog.c(516): AH02978: Watchdog: Looking for child (_default_).
+[Wed Aug 12 19:35:14.944593 2020] [watchdog:debug] [pid 1:tid 140596218075392] mod_watchdog.c(516): AH02978: Watchdog: Looking for child (_proxy_hcheck_).
+[Wed Aug 12 19:35:14.944601 2020] [watchdog:debug] [pid 1:tid 140596218075392] mod_watchdog.c(542): AH02979: Watchdog: Created singleton mutex (_proxy_hcheck_).
+[Wed Aug 12 19:35:14.944603 2020] [watchdog:debug] [pid 1:tid 140596218075392] mod_watchdog.c(516): AH02978: Watchdog: Looking for child (_singleton_).
+[Wed Aug 12 19:35:14.947222 2020] [mpm_event:notice] [pid 1:tid 140596218075392] AH00489: Apache/2.4.37 (Red Hat Enterprise Linux) configured -- resuming normal operations
+[Wed Aug 12 19:35:14.947238 2020] [mpm_event:info] [pid 1:tid 140596218075392] AH00490: Server built: Apr  5 2019 07:31:21
+[Wed Aug 12 19:35:14.947248 2020] [core:notice] [pid 1:tid 140596218075392] AH00094: Command line: '/usr/sbin/httpd -D FOREGROUND'
+[Wed Aug 12 19:35:14.947251 2020] [core:debug] [pid 1:tid 140596218075392] log.c(1571): AH02639: Using SO_REUSEPORT: yes (1)
+[Wed Aug 12 19:35:14.953451 2020] [watchdog:debug] [pid 6:tid 140595945871104] mod_watchdog.c(158): AH02972: Singleton Watchdog (_proxy_hcheck_) running
+[Wed Aug 12 19:35:14.953506 2020] [proxy_hcheck:debug] [pid 6:tid 140595945871104] mod_proxy_hcheck.c(893): AH03258: _proxy_hcheck_ watchdog started.
+[Wed Aug 12 19:35:14.954840 2020] [watchdog:debug] [pid 7:tid 140596218075392] mod_watchdog.c(590): AH02981: Watchdog: Created child worker thread (_proxy_hcheck_).
+[Wed Aug 12 19:35:14.954916 2020] [proxy:debug] [pid 7:tid 140596218075392] proxy_util.c(1923): AH00925: initializing worker proxy:reverse shared
+[Wed Aug 12 19:35:14.954936 2020] [proxy:debug] [pid 7:tid 140596218075392] proxy_util.c(1980): AH00927: initializing worker proxy:reverse local
+[Wed Aug 12 19:35:14.954971 2020] [proxy:debug] [pid 7:tid 140596218075392] proxy_util.c(2015): AH00930: initialized pool in child 7 for (*) min=0 max=61 smax=61
+[Wed Aug 12 19:35:14.954974 2020] [watchdog:debug] [pid 6:tid 140596218075392] mod_watchdog.c(590): AH02981: Watchdog: Created child worker thread (_proxy_hcheck_).
+[Wed Aug 12 19:35:14.955067 2020] [proxy_hcheck:debug] [pid 6:tid 140595945871104] mod_proxy_hcheck.c(907): AH03313: apr_thread_pool_create() with 16 threads succeeded
+[Wed Aug 12 19:35:14.955160 2020] [proxy:debug] [pid 6:tid 140596218075392] proxy_util.c(1923): AH00925: initializing worker proxy:reverse shared
+[Wed Aug 12 19:35:14.955174 2020] [proxy:debug] [pid 6:tid 140596218075392] proxy_util.c(1980): AH00927: initializing worker proxy:reverse local
+[Wed Aug 12 19:35:14.955190 2020] [proxy:debug] [pid 6:tid 140596218075392] proxy_util.c(2015): AH00930: initialized pool in child 6 for (*) min=0 max=61 smax=61
+[Wed Aug 12 19:35:14.956979 2020] [watchdog:debug] [pid 8:tid 140596218075392] mod_watchdog.c(590): AH02981: Watchdog: Created child worker thread (_proxy_hcheck_).
+[Wed Aug 12 19:35:14.957036 2020] [proxy:debug] [pid 8:tid 140596218075392] proxy_util.c(1923): AH00925: initializing worker proxy:reverse shared
+[Wed Aug 12 19:35:14.957051 2020] [proxy:debug] [pid 8:tid 140596218075392] proxy_util.c(1980): AH00927: initializing worker proxy:reverse local
+[Wed Aug 12 19:35:14.957088 2020] [proxy:debug] [pid 8:tid 140596218075392] proxy_util.c(2015): AH00930: initialized pool in child 8 for (*) min=0 max=61 smax=61
+[Wed Aug 12 19:35:14.957226 2020] [mpm_event:debug] [pid 6:tid 140595418691328] event.c(2313): AH02471: start_threads: Using epoll (wakeable)
+[Wed Aug 12 19:35:14.959136 2020] [mpm_event:debug] [pid 7:tid 140595626948352] event.c(2313): AH02471: start_threads: Using epoll (wakeable)
+[Wed Aug 12 19:35:14.960206 2020] [mpm_event:debug] [pid 8:tid 140595626948352] event.c(2313): AH02471: start_threads: Using epoll (wakeable)
+[Wed Aug 12 19:36:57.659524 2020] [authz_core:debug] [pid 6:tid 140595410298624] mod_authz_core.c(820): [client 10.88.0.1:37088] AH01626: authorization result of Require all granted: granted
+[Wed Aug 12 19:36:57.659604 2020] [authz_core:debug] [pid 6:tid 140595410298624] mod_authz_core.c(820): [client 10.88.0.1:37088] AH01626: authorization result of <RequireAny>: granted
+[Wed Aug 12 19:36:57.659750 2020] [authz_core:debug] [pid 6:tid 140595410298624] mod_authz_core.c(820): [client 10.88.0.1:37088] AH01626: authorization result of Require all granted: granted
+[Wed Aug 12 19:36:57.659754 2020] [authz_core:debug] [pid 6:tid 140595410298624] mod_authz_core.c(820): [client 10.88.0.1:37088] AH01626: authorization result of <RequireAny>: granted
+10.88.0.1 - - [12/Aug/2020:19:36:57 +0000] "GET / HTTP/1.1" 200 39
+[student@workstation ~]$ lab troubleshoot-container finish
+
+Completing the Guided Excercise: Configuring Apache Container Logs for Debugging
+
+ · Stopping the troubleshoot-container container...............  SUCCESS
+ · Removing the troubleshoot-container container...............  SUCCESS
+ · Removing the troubleshoot-container container image.........  SUCCESS
+ · Removing redhattraining/httpd-parent container image........  SUCCESS
+[student@workstation ~]$ lab container-build start
+
+Checking prerequisites for Guided Exercise: Building Container Images
+
+ Checking local clone of the applications repository:
+ · Folder '/home/student/DO288-apps' is a git repo.............  SUCCESS
+ · Git repo '/home/student/DO288-apps' has no pending changes..  SUCCESS
+ Verifying the OpenShift cluster is running:
+ · Log in on OpenShift.........................................  SUCCESS
+ · Check master node ip-10-0-139-73.ec2.internal is ready......  SUCCESS
+ · Check master node ip-10-0-151-29.ec2.internal is ready......  SUCCESS
+ · Check master node ip-10-0-163-6.ec2.internal is ready.......  SUCCESS
+ · Check the internal registry is up and running...............  SUCCESS
+ Checking required artifacts:
+ · Image 'redhattraining/httpd-parent' is available............  SUCCESS
+ Checking for conflicts with existing OpenShift projects:
+ · Project 'carol-liang-container-build' is absent.............  SUCCESS
+
+Setting up the classroom for Guided Exercise: Building Container Images
+
+ · Download exercise files.....................................  SUCCESS
+ · Download solution files.....................................  SUCCESS
+
+Overall start status...........................................  SUCCESS
+
+[student@workstation ~]$ more ~/DO288/labs/container-build/httpd-parent/Dockerfile
+FROM registry.access.redhat.com/ubi8/ubi:8.0
+
+MAINTAINER Red Hat Training <training@redhat.com>
+
+# DocumentRoot for Apache
+ENV DOCROOT=/var/www/html 
+
+
+RUN   yum install -y --nodocs --disableplugin=subscription-manager httpd && \
+      yum clean all --disableplugin=subscription-manager -y && \
+      echo "Hello from the httpd-parent container!" > ${DOCROOT}/index.html
+
+# Allows child images to inject their own content into DocumentRoot
+ONBUILD COPY src/ ${DOCROOT}/
+
+EXPOSE 80
+
+# This stuff is needed to ensure a clean start
+RUN rm -rf /run/httpd && mkdir /run/httpd
+
+# Run as the root user
+USER root
+
+# Launch httpd
+CMD /usr/sbin/httpd -DFOREGROUND
+[student@workstation ~]$ source /usr/local/etc/ocp4.config
+[student@workstation ~]$ cd DO288-apps
+[student@workstation DO288-apps]$ git checkout master
+Already on 'master'
+[student@workstation DO288-apps]$ git checkout -b container-build
+Switched to a new branch 'container-build'
+[student@workstation DO288-apps]$ git push -u origin container-build
+Total 0 (delta 0), reused 0 (delta 0)
+remote: 
+remote: Create a pull request for 'container-build' on GitHub by visiting:
+remote:      https://github.com/carol101/DO288-apps/pull/new/container-build
+remote: 
+To https://github.com/carol101/DO288-apps.git
+ * [new branch]      container-build -> container-build
+Branch container-build set up to track remote branch container-build from origin.
+[student@workstation DO288-apps]$ oc login -u ${RHT_OCP4_DEV_USER} -p ${RHT_OCP4_DEV_PASSWORD} ${RHT_OCP4_MASTER_API}
+Login successful.
+
+You don't have any projects. You can try to create a new project, by running
+
+    oc new-project <projectname>
+
+[student@workstation DO288-apps]$ oc new-project ${RHT_OCP4_DEV_USER}-container-build
+Now using project "carol-liang-container-build" on server "https://api.ocp-na2.prod.nextcle.com:6443".
+
+You can add applications to this project with the 'new-app' command. For example, try:
+
+    oc new-app django-psql-example
+
+to build a new example application in Python. Or use kubectl to deploy a simple Kubernetes application:
+
+    kubectl create deployment hello-node --image=gcr.io/hello-minikube-zero-install/hello-node
+
+[student@workstation DO288-apps]$ oc new-app --name hola https://github.com/${RHT_OCP4_GITHUB_USER}/DO288-apps#container-build --context-dir container-build
+--> Found Docker image 8fde1f3 (14 months old) from quay.io for "quay.io/redhattraining/httpd-parent"
+
+    Red Hat Universal Base Image 8 
+    ------------------------------ 
+    The Universal Base Image is designed and engineered to be the base layer for all of your containerized applications, middleware and utilities. This base image is freely redistributable, but Red Hat only supports Red Hat technologies through subscriptions for Red Hat products. This image is maintained by Red Hat and updated regularly.
+
+    Tags: base rhel8
+
+    * An image stream tag will be created as "httpd-parent:latest" that will track the source image
+    * A Docker build using source code from https://github.com/carol101/DO288-apps#container-build will be created
+      * The resulting image will be pushed to image stream tag "hola:latest"
+      * Every time "httpd-parent:latest" changes a new build will be triggered
+    * This image will be deployed in deployment config "hola"
+    * Port 80/tcp will be load balanced by service "hola"
+      * Other containers can access this service through the hostname "hola"
+    * WARNING: Image "quay.io/redhattraining/httpd-parent" runs as the 'root' user which may not be permitted by your cluster administrator
+
+--> Creating resources ...
+    imagestream.image.openshift.io "httpd-parent" created
+    imagestream.image.openshift.io "hola" created
+    buildconfig.build.openshift.io "hola" created
+    deploymentconfig.apps.openshift.io "hola" created
+    service "hola" created
+--> Success
+    Build scheduled, use 'oc logs -f bc/hola' to track its progress.
+    Application is not exposed. You can expose services to the outside world by executing one or more of the commands below:
+     'oc expose svc/hola' 
+    Run 'oc status' to view your app.
+[student@workstation DO288-apps]$ oc logs -f bc/hola
+Cloning "https://github.com/carol101/DO288-apps" ...
+	Commit:	20d773370efdfce3221f56348ba2c544558a58a3 (fix: Add a missing license file for the repository (#48))
+	Author:	Marek Czernek <mczernek@redhat.com>
+	Date:	Tue Jul 28 16:04:10 2020 +0200
+Replaced Dockerfile FROM image quay.io/redhattraining/httpd-parent
+Caching blobs under "/var/cache/blobs".
+
+Pulling image quay.io/redhattraining/httpd-parent@sha256:998847647613fa38fd6641953a4a3a8dd5a986211988a5f99f29ba47d3308895 ...
+Getting image source signatures
+Copying blob sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Copying blob sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Copying blob sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Copying blob sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Copying blob sha256:08b8c9fdec444ba23c764be2e8c24e1526d664dc72339af2429dc66fbfefe850
+Copying blob sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Copying blob sha256:6a5240d60dc4e1ade0d103badb2a897e8103ebf0ebe08350cd582bbc9671cc7a
+Copying blob sha256:a3ed95caeb02ffe68cdd9fd84406680ae93d633cb16422d00e8a7c22955b46d4
+Copying blob sha256:787f47dbeaac926cc8c927a48e8a84fc97e05fbd1c08a4c9c4ddcaddfd87e2f7
+Copying blob sha256:408208567b9aab11c5265eadd4cbc9c890d73d74ffcdaf3e2309aaef12cd9394
+Writing manifest to image destination
+Storing signatures
+STEP 1: FROM quay.io/redhattraining/httpd-parent@sha256:998847647613fa38fd6641953a4a3a8dd5a986211988a5f99f29ba47d3308895
+STEP 2: COPY src/ ${DOCROOT}/
+edde5ade1c4697502ecee82ec3d51e4f3a0e01fe07a3a42142ede202b5b846ff
+STEP 3: ENV "OPENSHIFT_BUILD_NAME"="hola-1" "OPENSHIFT_BUILD_NAMESPACE"="carol-liang-container-build" "OPENSHIFT_BUILD_SOURCE"="https://github.com/carol101/DO288-apps" "OPENSHIFT_BUILD_REFERENCE"="container-build" "OPENSHIFT_BUILD_COMMIT"="20d773370efdfce3221f56348ba2c544558a58a3"
+9e3afca2462db3011c152089d5e06e20c27db032b78d2cf41ce56b1b053c861e
+STEP 4: LABEL "io.openshift.build.commit.author"="Marek Czernek \u003cmczernek@redhat.com\u003e" "io.openshift.build.commit.date"="Tue Jul 28 16:04:10 2020 +0200" "io.openshift.build.commit.id"="20d773370efdfce3221f56348ba2c544558a58a3" "io.openshift.build.commit.message"="fix: Add a missing license file for the repository (#48)" "io.openshift.build.commit.ref"="container-build" "io.openshift.build.name"="hola-1" "io.openshift.build.namespace"="carol-liang-container-build" "io.openshift.build.source-context-dir"="container-build" "io.openshift.build.source-location"="https://github.com/carol101/DO288-apps"
+STEP 5: COMMIT temp.builder.openshift.io/carol-liang-container-build/hola-1:78067cc3
+6841c1eb8eb0afb1dc0aec6b98c7cc63736ad38e3efd6ce6dd47bb4f3a2ae578
+
+Pushing image image-registry.openshift-image-registry.svc:5000/carol-liang-container-build/hola:latest ...
+Getting image source signatures
+Copying blob sha256:bd3653197ba7f091e077c6a1afe72104f7654eab7cb475470126aea64f0ef45d
+Copying blob sha256:787f47dbeaac926cc8c927a48e8a84fc97e05fbd1c08a4c9c4ddcaddfd87e2f7
+Copying blob sha256:08b8c9fdec444ba23c764be2e8c24e1526d664dc72339af2429dc66fbfefe850
+Copying blob sha256:6a5240d60dc4e1ade0d103badb2a897e8103ebf0ebe08350cd582bbc9671cc7a
+Copying blob sha256:408208567b9aab11c5265eadd4cbc9c890d73d74ffcdaf3e2309aaef12cd9394
+Copying config sha256:6841c1eb8eb0afb1dc0aec6b98c7cc63736ad38e3efd6ce6dd47bb4f3a2ae578
+Writing manifest to image destination
+Storing signatures
+Successfully pushed image-registry.openshift-image-registry.svc:5000/carol-liang-container-build/hola@sha256:b63bcf2c3d196d2900a8b94847e639acb42b6f2917be03c5a81e521951785471
+Push successful
+[student@workstation DO288-apps]$ oc get pods
+NAME            READY   STATUS              RESTARTS   AGE
+hola-1-build    0/1     Completed           0          67s
+hola-1-bw6kf    0/1     ContainerCreating   0          9s
+hola-1-deploy   1/1     Running             0          17s
+[student@workstation DO288-apps]$ oc get pods
+NAME            READY   STATUS             RESTARTS   AGE
+hola-1-build    0/1     Completed          0          78s
+hola-1-bw6kf    0/1     CrashLoopBackOff   1          20s
+hola-1-deploy   1/1     Running            0          28s
+[student@workstation DO288-apps]$ oc logs hola-1-bw6kf
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.129.2.202. Set the 'ServerName' directive globally to suppress this message
+(13)Permission denied: AH00072: make_sock: could not bind to address [::]:80
+(13)Permission denied: AH00072: make_sock: could not bind to address 0.0.0.0:80
+no listening sockets available, shutting down
+AH00015: Unable to open logs
+[student@workstation DO288-apps]$ oc logs hola-1-bw6kf
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.129.2.202. Set the 'ServerName' directive globally to suppress this message
+(13)Permission denied: AH00072: make_sock: could not bind to address [::]:80
+(13)Permission denied: AH00072: make_sock: could not bind to address 0.0.0.0:80
+no listening sockets available, shutting down
+AH00015: Unable to open logs
+[student@workstation DO288-apps]$ oc delete all -l app=hola
+pod "hola-1-bw6kf" deleted
+replicationcontroller "hola-1" deleted
+service "hola" deleted
+deploymentconfig.apps.openshift.io "hola" deleted
+buildconfig.build.openshift.io "hola" deleted
+build.build.openshift.io "hola-1" deleted
+imagestream.image.openshift.io "hola" deleted
+imagestream.image.openshift.io "httpd-parent" deleted
+[student@workstation DO288-apps]$ vim ~/DO288-apps/container-build/Dockerfile
+[student@workstation DO288-apps]$ cp ~/DO288/solutions/container-build/Dockerfile ~/DO288-apps/container-build/Dockerfile
+[student@workstation DO288-apps]$ oc new-app --name hola https://github.com/${RHT_OCP4_GITHUB_USER}/DO288-apps#container-build --context-dir container-build
+--> Found Docker image 8fde1f3 (14 months old) from quay.io for "quay.io/redhattraining/httpd-parent"
+
+    Red Hat Universal Base Image 8 
+    ------------------------------ 
+    The Universal Base Image is designed and engineered to be the base layer for all of your containerized applications, middleware and utilities. This base image is freely redistributable, but Red Hat only supports Red Hat technologies through subscriptions for Red Hat products. This image is maintained by Red Hat and updated regularly.
+
+    Tags: base rhel8
+
+    * An image stream tag will be created as "httpd-parent:latest" that will track the source image
+    * A Docker build using source code from https://github.com/carol101/DO288-apps#container-build will be created
+      * The resulting image will be pushed to image stream tag "hola:latest"
+      * Every time "httpd-parent:latest" changes a new build will be triggered
+    * This image will be deployed in deployment config "hola"
+    * Port 80/tcp will be load balanced by service "hola"
+      * Other containers can access this service through the hostname "hola"
+    * WARNING: Image "quay.io/redhattraining/httpd-parent" runs as the 'root' user which may not be permitted by your cluster administrator
+
+--> Creating resources ...
+    imagestream.image.openshift.io "httpd-parent" created
+    imagestream.image.openshift.io "hola" created
+    buildconfig.build.openshift.io "hola" created
+    deploymentconfig.apps.openshift.io "hola" created
+    service "hola" created
+--> Success
+    Build scheduled, use 'oc logs -f bc/hola' to track its progress.
+    Application is not exposed. You can expose services to the outside world by executing one or more of the commands below:
+     'oc expose svc/hola' 
+    Run 'oc status' to view your app.
+[student@workstation DO288-apps]$ oc get pods
+NAME           READY   STATUS     RESTARTS   AGE
+hola-1-build   0/1     Init:0/2   0          10s
+[student@workstation DO288-apps]$ oc get pods
+NAME           READY   STATUS    RESTARTS   AGE
+hola-1-build   1/1     Running   0          19s
+[student@workstation DO288-apps]$ oc get pods
+NAME           READY   STATUS    RESTARTS   AGE
+hola-1-build   1/1     Running   0          26s
+[student@workstation DO288-apps]$ oc get pods
+NAME           READY   STATUS    RESTARTS   AGE
+hola-1-build   1/1     Running   0          31s
+[student@workstation DO288-apps]$ oc get pods
+NAME           READY   STATUS    RESTARTS   AGE
+hola-1-build   1/1     Running   0          41s
+[student@workstation DO288-apps]$ oc get pods
+NAME            READY   STATUS              RESTARTS   AGE
+hola-1-build    0/1     Completed           0          58s
+hola-1-deploy   0/1     ContainerCreating   0          7s
+[student@workstation DO288-apps]$ oc get pods
+NAME            READY   STATUS              RESTARTS   AGE
+hola-1-5fb5r    0/1     ContainerCreating   0          7s
+hola-1-build    0/1     Completed           0          67s
+hola-1-deploy   1/1     Running             0          16s
+[student@workstation DO288-apps]$ oc get pods
+NAME            READY   STATUS             RESTARTS   AGE
+hola-1-5fb5r    0/1     CrashLoopBackOff   1          15s
+hola-1-build    0/1     Completed          0          75s
+hola-1-deploy   1/1     Running            0          24s
+[student@workstation DO288-apps]$ oc get pods
+NAME            READY   STATUS             RESTARTS   AGE
+hola-1-5fb5r    0/1     CrashLoopBackOff   1          19s
+hola-1-build    0/1     Completed          0          79s
+hola-1-deploy   1/1     Running            0          28s
+[student@workstation DO288-apps]$ vim ~/DO288-apps/container-build/Dockerfile
+[student@workstation DO288-apps]$ oc get pods
+NAME            READY   STATUS             RESTARTS   AGE
+hola-1-5fb5r    0/1     CrashLoopBackOff   5          3m23s
+hola-1-build    0/1     Completed          0          4m23s
+hola-1-deploy   1/1     Running            0          3m32s
+[student@workstation DO288-apps]$ oc logs hola-1-5fb5r
+AH00558: httpd: Could not reliably determine the server's fully qualified domain name, using 10.130.2.105. Set the 'ServerName' directive globally to suppress this message
+(13)Permission denied: AH00072: make_sock: could not bind to address [::]:80
+(13)Permission denied: AH00072: make_sock: could not bind to address 0.0.0.0:80
+no listening sockets available, shutting down
+AH00015: Unable to open logs
+[student@workstation DO288-apps]$ oc delete all -l app=hola
+pod "hola-1-5fb5r" deleted
+replicationcontroller "hola-1" deleted
+service "hola" deleted
+deploymentconfig.apps.openshift.io "hola" deleted
+buildconfig.build.openshift.io "hola" deleted
+build.build.openshift.io "hola-1" deleted
+imagestream.image.openshift.io "hola" deleted
+imagestream.image.openshift.io "httpd-parent" deleted
+[student@workstation DO288-apps]$ cd container-build
+[student@workstation container-build]$ git commit -a -m "Changed Dockerfile to enable running as a random uid on OpenShift"
+[container-build 6d222a9] Changed Dockerfile to enable running as a random uid on OpenShift
+ 1 file changed, 20 insertions(+), 1 deletion(-)
+[student@workstation container-build]$ git push
+Counting objects: 7, done.
+Delta compression using up to 2 threads.
+Compressing objects: 100% (4/4), done.
+Writing objects: 100% (4/4), 767 bytes | 0 bytes/s, done.
+Total 4 (delta 1), reused 0 (delta 0)
+remote: Resolving deltas: 100% (1/1), completed with 1 local object.
+To https://github.com/carol101/DO288-apps.git
+   20d7733..6d222a9  container-build -> container-build
+[student@workstation container-build]$ cd ~
+[student@workstation ~]$ oc new-app --name hola https://github.com/${RHT_OCP4_GITHUB_USER}/DO288-apps#container-build --context-dir container-build
+--> Found Docker image 8fde1f3 (14 months old) from quay.io for "quay.io/redhattraining/httpd-parent"
+
+    Red Hat Universal Base Image 8 
+    ------------------------------ 
+    The Universal Base Image is designed and engineered to be the base layer for all of your containerized applications, middleware and utilities. This base image is freely redistributable, but Red Hat only supports Red Hat technologies through subscriptions for Red Hat products. This image is maintained by Red Hat and updated regularly.
+
+    Tags: base rhel8
+
+    * An image stream tag will be created as "httpd-parent:latest" that will track the source image
+    * A Docker build using source code from https://github.com/carol101/DO288-apps#container-build will be created
+      * The resulting image will be pushed to image stream tag "hola:latest"
+      * Every time "httpd-parent:latest" changes a new build will be triggered
+    * This image will be deployed in deployment config "hola"
+    * Port 8080/tcp will be load balanced by service "hola"
+      * Other containers can access this service through the hostname "hola"
+    * WARNING: Image "quay.io/redhattraining/httpd-parent" runs as the 'root' user which may not be permitted by your cluster administrator
+
+--> Creating resources ...
+    imagestream.image.openshift.io "httpd-parent" created
+    imagestream.image.openshift.io "hola" created
+    buildconfig.build.openshift.io "hola" created
+    deploymentconfig.apps.openshift.io "hola" created
+    service "hola" created
+--> Success
+    Build scheduled, use 'oc logs -f bc/hola' to track its progress.
+    Application is not exposed. You can expose services to the outside world by executing one or more of the commands below:
+     'oc expose svc/hola' 
+    Run 'oc status' to view your app.
+[student@workstation ~]$ oc status
+In project carol-liang-container-build on server https://api.ocp-na2.prod.nextcle.com:6443
+
+svc/hola - 172.30.23.141:8080
+  dc/hola deploys istag/hola:latest <-
+    bc/hola docker builds https://github.com/carol101/DO288-apps#container-build on istag/httpd-parent:latest 
+      build #1 pending for 5 seconds
+    deployment #1 waiting on image or update
+
+
+2 infos identified, use 'oc status --suggest' to see details.
+[student@workstation ~]$ oc get pods
+NAME           READY   STATUS    RESTARTS   AGE
+hola-1-build   1/1     Running   0          18s
+[student@workstation ~]$ oc get pods
+NAME           READY   STATUS    RESTARTS   AGE
+hola-1-build   1/1     Running   0          30s
+[student@workstation ~]$ oc get pods
+NAME           READY   STATUS    RESTARTS   AGE
+hola-1-build   1/1     Running   0          42s
+[student@workstation ~]$ oc get pods
+NAME            READY   STATUS              RESTARTS   AGE
+hola-1-bnz5z    0/1     ContainerCreating   0          3s
+hola-1-build    0/1     Completed           0          60s
+hola-1-deploy   1/1     Running             0          12s
+[student@workstation ~]$ oc get pods
+NAME            READY   STATUS      RESTARTS   AGE
+hola-1-bnz5z    1/1     Running     0          14s
+hola-1-build    0/1     Completed   0          71s
+hola-1-deploy   0/1     Completed   0          23s
+[student@workstation ~]$ oc expose svc/hola
+route.route.openshift.io/hola exposed
+[student@workstation ~]$ oc get route
+NAME   HOST/PORT                                                        PATH   SERVICES   PORT       TERMINATION   WILDCARD
+hola   hola-carol-liang-container-build.apps.ocp-na2.prod.nextcle.com          hola       8080-tcp                 None
+[student@workstation ~]$ curl http://hola-${RHT_OCP4_DEV_USER}-container-build.${RHT_OCP4_WILDCARD_DOMAIN}
+<!DOCTYPE html>
+<html>
+<body>
+  Hello from the Apache child container!
+</body>
+</html>
+[student@workstation ~]$ oc delete project ${RHT_OCP4_DEV_USER}-container-build
+project.project.openshift.io "carol-liang-container-build" deleted
+[student@workstation ~]$ lab container-build finish
+
+Completing Guided Exercise: Building Container Images
+
+ · Log in on OpenShift.........................................  SUCCESS
+ · Remove exercise files.......................................  SUCCESS
+ · Remove solution files.......................................  SUCCESS
+ · Git repo '/home/student/DO288-apps' has no pending changes..  SUCCESS
+
+Please use start if you wish to do the exercise again.
+
+[student@workstation ~]$ 
+
